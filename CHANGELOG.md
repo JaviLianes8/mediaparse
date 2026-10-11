@@ -9,3 +9,9 @@ All notable changes to this project are documented here. The format follows
 ## [0.1.0]
 
 - First release.
+- `parse` splits a Content-Type style header into a media type and its
+  parameters, unescaping quoted values and tolerating malformed input.
+- `build` renders a media type and parameters back, quoting only the values that
+  a token may not hold.
+- `normalize` and `matches` canonicalize and compare headers.
+- Fills the gap left by `cgi.parse_header`, removed in Python 3.13.
