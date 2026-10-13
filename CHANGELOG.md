@@ -36,6 +36,7 @@ All notable changes to this project are documented here. The format follows
 - `build` no longer writes control characters such as CR and LF into a quoted value,
   which let a parameter value split the header, nor characters a header cannot carry.
   A duplicate name after lower-casing is refused instead of written twice.
+- Error messages show at most 80 characters of the input.
 
 ## [0.1.0]
 

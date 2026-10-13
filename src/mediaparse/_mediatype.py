@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 from ._tokens import ascii_lower, is_quotable, is_token, quote
 
 
@@ -15,7 +15,9 @@ class MediaType:
     Construction checks the parts: type, subtype and parameter names must be tokens and
     are stored in lower case, names must be unique, and values must fit a quoted string.
     ``str()`` serializes it the way the WHATWG MIME Sniffing standard does, which is the
-    form browsers expose, for example ``text/html;charset=utf-8``.
+    form browsers expose, for example ``text/html;charset=utf-8``. Equality compares the
+    parameters in order; use :func:`matches` to ignore order and ``charset`` case. A part
+    of the wrong type raises :class:`TypeError`, an invalid one :class:`MediaTypeError`.
     """
 
     type: str
@@ -24,18 +26,23 @@ class MediaType:
 
     def __post_init__(self) -> None:
         for label, part in (("type", self.type), ("subtype", self.subtype)):
-            if not isinstance(part, str) or not is_token(part):
-                raise MediaTypeError(f"invalid media {label}: {part!r}")
+            _require_str(label, part)
+            if not is_token(part):
+                raise MediaTypeError(f"invalid media {label}: {show(part)}")
+        if not isinstance(self.params, (tuple, list)):
+            raise TypeError(f"params must be a tuple of pairs, got {type(self.params).__name__}")
         names: list[str] = []
         pairs = tuple(self.params)
         for pair in pairs:
             if not isinstance(pair, tuple) or len(pair) != 2:
-                raise MediaTypeError(f"parameters must be (name, value) pairs, got {pair!r}")
+                raise TypeError(f"parameters must be (name, value) tuples, got {show(pair)}")
             name, value = pair
-            if not isinstance(name, str) or not is_token(name):
-                raise MediaTypeError(f"invalid parameter name: {name!r}")
-            if not isinstance(value, str) or not all(is_quotable(char) for char in value):
-                raise MediaTypeError(f"parameter {name!r} has a value no header can carry")
+            _require_str("parameter name", name)
+            _require_str("parameter value", value)
+            if not is_token(name):
+                raise MediaTypeError(f"invalid parameter name: {show(name)}")
+            if not all(is_quotable(char) for char in value):
+                raise MediaTypeError(f"parameter {show(name)} has a value no header can carry")
             names.append(ascii_lower(name))
         if len(set(names)) != len(names):
             raise MediaTypeError("a parameter is given more than once")
@@ -72,3 +79,8 @@ class MediaType:
         parts = [self.essence]
         parts.extend(f"{name}={quote(value)}" for name, value in self.params)
         return ";".join(parts)
+
+
+def _require_str(label: str, value: object) -> None:
+    if not isinstance(value, str):
+        raise TypeError(f"{label} must be a str, got {type(value).__name__}")

@@ -6,12 +6,12 @@ import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 from ._lenient import collect_quoted, parse_lenient
 from ._mediatype import MediaType
 from ._parse import parse_media_type
 from ._strict import parse_strict
-from ._tokens import HTTP_WHITESPACE, ascii_lower
+from ._tokens import HTTP_WHITESPACE, OWS, ascii_lower
 
 # qvalue = ( "0" [ "." 0*3DIGIT ] ) / ( "1" [ "." 0*3("0") ] )
 _QVALUE = re.compile(r"0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?")
@@ -23,6 +23,17 @@ class AcceptItem:
 
     media_range: MediaType
     q: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.media_range, MediaType):
+            raise TypeError(
+                f"media_range must be a MediaType, got {type(self.media_range).__name__}"
+            )
+        if isinstance(self.q, bool) or not isinstance(self.q, (int, float)):
+            raise TypeError(f"q must be a number, got {type(self.q).__name__}")
+        if not 0 <= self.q <= 1:
+            raise MediaTypeError(f"q must be between 0 and 1, got {show(self.q)}")
+        object.__setattr__(self, "q", float(self.q))
 
     def specificity(self) -> tuple[bool, bool, int]:
         """Precedence of the range: concrete type, concrete subtype, parameter count."""
@@ -50,7 +61,7 @@ def parse_accept(header: str, *, strict: bool = False) -> list[AcceptItem]:
         raise TypeError(f"expected str, got {type(header).__name__}")
     items: list[AcceptItem] = []
     for start, element in _elements(header):
-        if not element.strip(HTTP_WHITESPACE):
+        if not element.strip(OWS if strict else HTTP_WHITESPACE):
             continue
         try:
             items.append(_item(element, strict))
@@ -78,6 +89,8 @@ def negotiate(accept: str | None, offers: Iterable[str]) -> str | None:
     Offers are concrete media types in the server's order of preference, which breaks ties.
     The chosen offer is returned exactly as given.
     """
+    if isinstance(offers, str):
+        raise TypeError("offers must be an iterable of media types, not a single str")
     items = None if accept is None else parse_accept(accept)
     best, best_q = None, 0.0
     for offer in offers:
@@ -102,10 +115,14 @@ def _item(element: str, strict: bool) -> AcceptItem:
     if media.type == "*" and media.subtype != "*":
         raise MediaTypeError(f"invalid media range: {media.essence!r}")
     weight = media.get("q")
+    if weight is None and not strict and "q" in _raw_names(element):
+        # The browser algorithm dropped a malformed q (q =0, q=, a control character);
+        # reading it as the default weight 1 would turn "not acceptable" into "best".
+        raise MediaTypeError("invalid weight")
     q = 1.0
     if weight is not None:
         if _QVALUE.fullmatch(weight) is None or "q" in quoted:
-            raise MediaTypeError(f"invalid weight q={weight!r}")
+            raise MediaTypeError(f"invalid weight q={show(weight)}")
         q = float(weight)
     rest = tuple(pair for pair in media.params if pair[0] != "q")
     return AcceptItem(MediaType(media.type, media.subtype, rest), q)
@@ -125,10 +142,28 @@ def _elements(header: str) -> Iterator[tuple[int, str]]:
     yield start, header[start:]
 
 
+def _raw_names(element: str) -> set[str]:
+    """Parameter names as written, trimmed and lower-cased, even where the value is broken."""
+    names: set[str] = set()
+    index, length = element.find(";"), len(element)
+    while 0 <= index < length:
+        index += 1
+        start = index
+        while index < length and element[index] not in ";=":
+            index += 1
+        names.add(ascii_lower(element[start:index].strip(HTTP_WHITESPACE)))
+        while index < length and element[index] != ";":
+            if element[index] == '"':
+                _, index = collect_quoted(element, index)
+            else:
+                index += 1
+    return names
+
+
 def _offer(offer: str) -> MediaType:
     media = parse_media_type(offer)
     if "*" in (media.type, media.subtype):
-        raise MediaTypeError(f"an offer must be a concrete media type, not {offer!r}")
+        raise MediaTypeError(f"an offer must be a concrete media type, not {show(offer)}")
     return media
 
 

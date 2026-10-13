@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 
 # attr-char from RFC 8187 section 3.2.1: a token character other than "*", "'" and "%".
 ATTR_CHARS = frozenset("!#$&+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -28,12 +28,14 @@ def percent_decode(text: str) -> bytes:
         if char == "%":
             pair = text[index + 1 : index + 3]
             if len(pair) != 2 or pair[0] not in _HEX or pair[1] not in _HEX:
-                raise MediaTypeError(f"invalid percent escape in {text!r}", position=index)
+                raise MediaTypeError(f"invalid percent escape in {show(text)}", position=index)
             out.append(int(pair, 16))
             index += 3
             continue
         if not char.isascii():
-            raise MediaTypeError(f"non-ASCII character in encoded value {text!r}", position=index)
+            raise MediaTypeError(
+                f"non-ASCII character in encoded value {show(text)}", position=index
+            )
         out.append(ord(char))
         index += 1
     return bytes(out)

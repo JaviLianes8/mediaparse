@@ -54,7 +54,8 @@ def test_rfc_audio_example() -> None:
 
 def test_rfc_text_example() -> None:
     # RFC 9110: text/html and text/x-c equal, then text/x-dvi, then text/plain.
-    accept = "text/plain; q=0.5, text/html,\r\n       text/x-dvi; q=0.8, text/x-c"
+    # The RFC wraps the field over two lines; the field value joins them with a space.
+    accept = "text/plain; q=0.5, text/html, text/x-dvi; q=0.8, text/x-c"
     assert negotiate(accept, ["text/plain", "text/x-dvi"]) == "text/x-dvi"
     assert negotiate(accept, ["text/x-c", "text/html"]) == "text/x-c"
     assert negotiate(accept, ["text/plain"]) == "text/plain"

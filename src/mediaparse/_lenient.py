@@ -7,7 +7,7 @@ module raises :class:`MediaTypeError`; everything else it tolerates the way brow
 
 from __future__ import annotations
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 from ._mediatype import MediaType
 from ._tokens import HTTP_WHITESPACE, ascii_lower, is_quotable, is_token
 
@@ -19,13 +19,15 @@ def parse_lenient(text: str) -> MediaType:
     slash = data.find("/")
     main = data if slash < 0 else data[:slash]
     if not is_token(main):
-        raise MediaTypeError(f"invalid media type: {text!r}", position=offset)
+        raise MediaTypeError(f"invalid media type: {show(text)}", position=offset)
     if slash < 0:
-        raise MediaTypeError(f"media type has no subtype: {text!r}", position=offset + len(data))
+        raise MediaTypeError(
+            f"media type has no subtype: {show(text)}", position=offset + len(data)
+        )
     end = _find(data, ";", slash + 1)
     subtype = data[slash + 1 : end].rstrip(HTTP_WHITESPACE)
     if not is_token(subtype):
-        raise MediaTypeError(f"invalid media subtype: {text!r}", position=offset + slash + 1)
+        raise MediaTypeError(f"invalid media subtype: {show(text)}", position=offset + slash + 1)
     params: dict[str, str] = {}
     position, length = end, len(data)
     while position < length:

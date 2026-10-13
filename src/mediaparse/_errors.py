@@ -13,3 +13,9 @@ class MediaTypeError(ValueError):
     def __init__(self, message: str, *, position: int | None = None) -> None:
         super().__init__(message)
         self.position = position
+
+
+def show(value: object, limit: int = 80) -> str:
+    """Return ``repr(value)`` cut to ``limit`` characters, so a huge input stays out of messages."""
+    text = repr(value)
+    return text if len(text) <= limit else text[: limit - 3] + "..."

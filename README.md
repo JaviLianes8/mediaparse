@@ -114,11 +114,11 @@ print(decode_extended(parse(header)[1]))
 | `normalize(header, *, strict=False)` | Lower-cased names, sorted parameters, lower-cased `charset`. |
 | `matches(first, second)` | Whether two headers normalize to the same text. |
 | `parse_accept(header, *, strict=False)` | List of `AcceptItem` in header order. |
-| `AcceptItem` | `media_range` (a `MediaType`), `q`, `specificity()`, `matches(media)`. |
+| `AcceptItem` | `media_range` (a `MediaType`), `q` (0 to 1), `specificity()`, `matches(media)`. |
 | `quality(accept, offer)` | Weight of an offer under an Accept header; `None` means no header. |
 | `negotiate(accept, offers)` | Best acceptable offer, returned as given, or `None`. |
 | `decode_extended(params)` | Joins RFC 2231 sections and decodes `charset'lang'` values. |
-| `MediaTypeError` | `ValueError` subclass with `position` (or `None`). |
+| `MediaTypeError` | `ValueError` subclass with `position` (or `None`). Wrong argument types raise `TypeError`. |
 
 ## Rules it follows
 
@@ -134,16 +134,21 @@ print(decode_extended(parse(header)[1]))
 - **Names** are lower-cased in ASCII only, so a character such as the Kelvin sign never
   turns into a token. Values keep their case; `normalize` and `quality` treat `charset`
   as case insensitive.
-- **Building** refuses control characters and, unless `extended=True`, any non-ASCII
-  character, so the output is always one valid header field value.
+- **Building** never writes a control character or a non-ASCII character into the
+  header: by default such a value raises, and with `extended=True` it is percent-encoded
+  as `name*=UTF-8''...` (names may not end in `*` then). Two parameters that would be
+  written under one name raise. The output is always one valid header field value.
 - **Accept**: elements split on commas outside quoted strings, empty elements are
   ignored, `q` must match the `qvalue` grammar (up to three decimals, at most 1) and may
   appear anywhere among the parameters. In the default mode an invalid element is
-  skipped. A missing field (`None`) accepts everything; an empty one accepts nothing; a
+  skipped, including one whose `q` is malformed (`q =0`, `q=`), so a broken weight never
+  counts as 1. In strict mode only spaces and tabs may surround an element. A missing field (`None`) accepts everything; an empty one accepts nothing; a
   weight of 0 means not acceptable. On equally specific ranges the earliest one counts.
 - **RFC 2231**: sections start at 0 without gaps or leading zeros, encoded and plain
   sections may mix, a character may span sections, and `name*` wins over `name`. The
-  language tag is dropped; only text codecs are accepted as charsets.
+  language tag is dropped. Names compare in ASCII lower case. The charset must be a
+  charset name Python can decode as text; escape decoders, host code pages (`mbcs`,
+  `oem`), `idna` and `punycode` are refused.
 
 ## Why
 

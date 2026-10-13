@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 from ._extended import encode_extended
 from ._tokens import OWS, ascii_lower, is_quotable, is_token, quote
 
@@ -17,28 +17,33 @@ def build(mimetype: str, params: Mapping[str, str] | None = None, *, extended: b
     raises :class:`MediaTypeError`: control characters (other than tab) would split or
     corrupt the header, and characters outside ASCII have no agreed byte form. With
     ``extended=True`` such a value is written instead as ``name*=UTF-8''...``, the
-    percent-encoded form of RFC 8187 and RFC 2231.
+    percent-encoded form of RFC 8187 and RFC 2231, and names may not end in ``*``. Two
+    parameters that would be written under the same name raise :class:`MediaTypeError`.
     """
     parts = [essence(mimetype)]
+    if params is not None and not isinstance(params, Mapping):
+        raise TypeError(f"params must be a mapping, got {type(params).__name__}")
     seen: set[str] = set()
     for name, value in (params or {}).items():
         key = _name(name)
-        if key in seen:
-            raise MediaTypeError(f"parameter {key!r} is given more than once")
-        seen.add(key)
         if not isinstance(value, str):
-            raise TypeError(f"parameter {key!r} must be a str, got {type(value).__name__}")
+            raise TypeError(f"parameter {show(key)} must be a str, got {type(value).__name__}")
+        if extended and key.endswith("*"):
+            raise MediaTypeError(f"parameter {show(key)} ends in '*'; extended=True adds it")
         if value.isascii() and all(map(is_quotable, value)):
-            parts.append(f"{key}={quote(value)}")
+            field = f"{key}={quote(value)}"
         elif extended:
-            if key.endswith("*"):
-                raise MediaTypeError(f"parameter {key!r} already names an extended value")
-            parts.append(f"{key}*={encode_extended(value)}")
+            key += "*"
+            field = f"{key}={encode_extended(value)}"
         else:
             raise MediaTypeError(
-                f"parameter {key!r} holds a control or non-ASCII character; "
+                f"parameter {show(key)} holds a control or non-ASCII character; "
                 "pass extended=True to percent-encode it"
             )
+        if key in seen:
+            raise MediaTypeError(f"parameter {show(key)} is given more than once")
+        seen.add(key)
+        parts.append(field)
     return "; ".join(parts)
 
 
@@ -49,9 +54,9 @@ def essence(mimetype: str) -> str:
     cleaned = mimetype.strip(OWS)
     main, slash, subtype = cleaned.partition("/")
     if not slash:
-        raise MediaTypeError(f"media type has no subtype: {mimetype!r}")
+        raise MediaTypeError(f"media type has no subtype: {show(mimetype)}")
     if not is_token(main) or not is_token(subtype):
-        raise MediaTypeError(f"invalid media type: {mimetype!r}")
+        raise MediaTypeError(f"invalid media type: {show(mimetype)}")
     return ascii_lower(cleaned)
 
 
@@ -60,5 +65,5 @@ def _name(name: str) -> str:
         raise TypeError(f"parameter names must be str, got {type(name).__name__}")
     key = ascii_lower(name.strip(OWS))
     if not is_token(key):
-        raise MediaTypeError(f"invalid parameter name: {name!r}")
+        raise MediaTypeError(f"invalid parameter name: {show(name)}")
     return key

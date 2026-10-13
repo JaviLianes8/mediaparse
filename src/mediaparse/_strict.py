@@ -10,7 +10,7 @@ read (section 5.5). A parameter given twice is an error, as RFC 6838 section 4.3
 
 from __future__ import annotations
 
-from ._errors import MediaTypeError
+from ._errors import MediaTypeError, show
 from ._mediatype import MediaType
 from ._tokens import OWS, TOKEN_CHARS, ascii_lower
 
@@ -37,7 +37,7 @@ def parse_strict(text: str, quoted: set[str] | None = None) -> MediaType:
         start = reader.position
         name = ascii_lower(reader.token("parameter name"))
         if name in params:
-            raise MediaTypeError(f"parameter {name!r} is given more than once", position=start)
+            raise MediaTypeError(f"parameter {show(name)} is given more than once", position=start)
         reader.expect("=")
         if reader.peek() == '"':
             params[name] = reader.quoted()
@@ -63,7 +63,7 @@ class _Reader:
         found = self.peek()
         where = f"found {found!r}" if found else "found the end"
         return MediaTypeError(
-            f"{message} at position {self.position}, {where}: {self.text!r}",
+            f"{message} at position {self.position}, {where}: {show(self.text)}",
             position=self.position,
         )
 
