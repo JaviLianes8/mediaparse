@@ -1,0 +1,20 @@
+{
+  "wpt-mime-types.json": {
+    "title": "web-platform-tests mimesniff/mime-types/resources/mime-types.json",
+    "url": "https://raw.githubusercontent.com/web-platform-tests/wpt/ca5384f99ee37dcabfe8078f5afaf419bd4784c0/mimesniff/mime-types/resources/mime-types.json",
+    "revision": "commit ca5384f99ee37dcabfe8078f5afaf419bd4784c0",
+    "licence": "BSD-3-Clause, https://github.com/web-platform-tests/wpt/blob/master/LICENSE.md",
+    "fetched": "2026-10-13",
+    "size": 13656,
+    "sha256": "016d3dd91b647e03af2a69c7ec241bf787df8bffe7953018fe566e8ec5d7b822"
+  },
+  "wpt-generated-mime-types.json": {
+    "title": "web-platform-tests mimesniff/mime-types/resources/generated-mime-types.json",
+    "url": "https://raw.githubusercontent.com/web-platform-tests/wpt/ca5384f99ee37dcabfe8078f5afaf419bd4784c0/mimesniff/mime-types/resources/generated-mime-types.json",
+    "revision": "commit ca5384f99ee37dcabfe8078f5afaf419bd4784c0",
+    "licence": "BSD-3-Clause, https://github.com/web-platform-tests/wpt/blob/master/LICENSE.md",
+    "fetched": "2026-10-13",
+    "size": 61493,
+    "sha256": "20924495060ac9633f10d57a326b95a5987863f27c5d4765b13b744304b33fed"
+  }
+}

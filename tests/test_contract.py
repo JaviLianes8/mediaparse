@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.resources
 
 import mediaparse
@@ -5,11 +7,18 @@ import mediaparse
 # The public API. Add every exported name here as the library grows; this list is the
 # contract and the test below fails if the module and this list disagree.
 PUBLIC_API: list[str] = [
+    "AcceptItem",
+    "MediaType",
     "MediaTypeError",
     "build",
+    "decode_extended",
     "matches",
+    "negotiate",
     "normalize",
     "parse",
+    "parse_accept",
+    "parse_media_type",
+    "quality",
 ]
 
 
