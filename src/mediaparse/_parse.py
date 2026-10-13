@@ -2,70 +2,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from ._lenient import parse_lenient
+from ._mediatype import MediaType
+from ._strict import parse_strict
 
-from ._tokens import normalize_mimetype
 
+def parse_media_type(text: str, *, strict: bool = False) -> MediaType:
+    """Parse a media type header value into a :class:`MediaType`.
 
-def parse(header: str) -> tuple[str, dict[str, str]]:
-    """Split a media type header into ``(mimetype, params)``.
-
-    The media type and parameter names are lower-cased, quoted values are
-    unescaped, and whitespace around separators is ignored. A header with no
-    valid ``type/subtype`` raises :class:`MediaTypeError`; stray parameters
-    without a value are tolerated and dropped.
+    By default the WHATWG MIME Sniffing algorithm is used, so the result is what a browser
+    would read: whitespace is trimmed, parameters a browser would ignore are skipped and
+    the first of a repeated parameter wins. With ``strict=True`` the text must match the
+    RFC 9110 grammar exactly and a repeated parameter is an error. Either way a value with
+    no valid ``type/subtype`` raises :class:`MediaTypeError`.
     """
-    main, _, rest = header.partition(";")
-    mimetype = normalize_mimetype(main)
-    params: dict[str, str] = {}
-    for key, value in _iter_params(rest):
-        params[key] = value
-    return mimetype, params
+    if not isinstance(text, str):
+        raise TypeError(f"expected str, got {type(text).__name__}")
+    return parse_strict(text) if strict else parse_lenient(text)
 
 
-def _iter_params(text: str) -> Iterator[tuple[str, str]]:
-    index, length = 0, len(text)
-    while index < length:
-        while index < length and text[index] in "; \t":
-            index += 1
-        if index >= length:
-            break
-        start = index
-        while index < length and text[index] not in "=;":
-            index += 1
-        key = text[start:index].strip().lower()
-        if index < length and text[index] == "=":
-            index += 1
-            value, index = _read_value(text, index)
-            if key:
-                yield key, value
-        else:
-            # A parameter with no value is not useful to preserve; skip it.
-            index += 1
-
-
-def _read_value(text: str, index: int) -> tuple[str, int]:
-    if index < len(text) and text[index] == '"':
-        return _read_quoted(text, index)
-    start = index
-    while index < len(text) and text[index] != ";":
-        index += 1
-    return text[start:index].strip(), index
-
-
-def _read_quoted(text: str, index: int) -> tuple[str, int]:
-    length = len(text)
-    index += 1  # skip the opening quote
-    chars: list[str] = []
-    while index < length:
-        char = text[index]
-        if char == "\\" and index + 1 < length:
-            chars.append(text[index + 1])
-            index += 2
-            continue
-        if char == '"':
-            index += 1
-            break
-        chars.append(char)
-        index += 1
-    return "".join(chars), index
+def parse(header: str, *, strict: bool = False) -> tuple[str, dict[str, str]]:
+    """Split a media type header into ``(essence, params)``, see :func:`parse_media_type`."""
+    media = parse_media_type(header, strict=strict)
+    return media.essence, media.parameters
