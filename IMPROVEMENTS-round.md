@@ -2,15 +2,15 @@
 
 Progress:
 - [x] Brainstorm ranked improvements (this file)
-- [ ] Pin the ground truth: RFC 9110, RFC 6838, RFC 2045/2231, WHATWG MIME Sniffing, WPT
-- [ ] Two parsers: browser-compatible lenient (WHATWG) and exact strict (RFC 9110)
-- [ ] Typed `MediaType` value with essence, suffix, parameters and serialization
-- [ ] Safe builder: header injection guard, extended (RFC 2231) values for non-ASCII
-- [ ] Accept: parse media ranges and weights, quality lookup and negotiation
-- [ ] RFC 2231 decoding: continuations and charset-encoded values
-- [ ] Contracts: WPT corpus (local), cited RFC vectors, README examples run, typing
-- [ ] Docs and packaging: README, CHANGELOG, metadata, installed-wheel e2e test
-- [ ] Gates: ruff format, ruff check, mypy --strict, pytest
+- [x] Pin the ground truth: RFC 9110, RFC 6838, RFC 2045/2231, WHATWG MIME Sniffing, WPT
+- [x] Two parsers: browser-compatible lenient (WHATWG) and exact strict (RFC 9110)
+- [x] Typed `MediaType` value with essence, suffix, parameters and serialization
+- [x] Safe builder: header injection guard, extended (RFC 2231) values for non-ASCII
+- [x] Accept: parse media ranges and weights, quality lookup and negotiation
+- [x] RFC 2231 decoding: continuations and charset-encoded values
+- [x] Contracts: WPT corpus (local), cited RFC vectors, README examples run, typing
+- [x] Docs and packaging: README, CHANGELOG, metadata, installed-wheel e2e test
+- [x] Gates: ruff format, ruff check, mypy --strict, pytest
 - [ ] Mutation run: removing guarded logic makes the suite fail
 - [ ] Independent review findings fixed with regression tests
 - [ ] Pull request opened, guard clean
