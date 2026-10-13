@@ -95,7 +95,7 @@ def test_extended_rejects_a_lone_surrogate() -> None:
 
 
 def test_build_rejects_non_string_input() -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="mimetype must be a str"):
         build(b"text/plain")  # type: ignore[arg-type]
     with pytest.raises(TypeError):
         build("text/plain", {"a": 1})  # type: ignore[dict-item]

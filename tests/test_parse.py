@@ -41,6 +41,10 @@ def test_text_after_a_closing_quote_is_skipped() -> None:
     assert parse('text/html;charset="shift_jis"iso-2022-jp')[1] == {"charset": "shift_jis"}
 
 
+def test_nothing_between_a_closing_quote_and_the_next_semicolon_is_read() -> None:
+    assert parse('text/plain;a="x"bc=d;e=f')[1] == {"a": "x", "e": "f"}
+
+
 def test_unterminated_quote_runs_to_the_end() -> None:
     assert parse('text/plain; name="open')[1] == {"name": "open"}
 
@@ -121,5 +125,5 @@ def test_parse_media_type_returns_the_value_object() -> None:
 
 
 def test_non_string_input_is_a_type_error() -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="expected str, got bytes"):
         parse_media_type(b"text/html")  # type: ignore[arg-type]

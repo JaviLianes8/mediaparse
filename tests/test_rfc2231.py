@@ -90,6 +90,7 @@ def test_other_parameters_pass_through() -> None:
         {"t*0": "\xe9", "t*1*": "%41"},
         {"t*": "no-such-charset''a"},
         {"t*": "zlib''a"},
+        {"t*": "iso-8859-1''\xe9"},
         {"t*": "utf-8''%FF"},
         {"t*": "''%C3%A9"},
     ],

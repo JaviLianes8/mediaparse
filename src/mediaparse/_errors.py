@@ -13,11 +13,3 @@ class MediaTypeError(ValueError):
     def __init__(self, message: str, *, position: int | None = None) -> None:
         super().__init__(message)
         self.position = position
-
-    def __reduce__(self) -> tuple[object, ...]:
-        # Keep ``position`` across pickling, which only replays ``args`` by default.
-        return (_rebuild, (str(self), self.position))
-
-
-def _rebuild(message: str, position: int | None) -> MediaTypeError:
-    return MediaTypeError(message, position=position)

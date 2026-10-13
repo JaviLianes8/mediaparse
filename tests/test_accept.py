@@ -75,6 +75,7 @@ def test_commas_inside_quoted_strings_do_not_split() -> None:
 
 def test_empty_elements_are_ignored() -> None:
     assert len(parse_accept(" , text/html,, ,\t*/*,")) == 2
+    assert len(parse_accept(" , text/html,, ,\t*/*,", strict=True)) == 2
     assert parse_accept("") == []
 
 
@@ -177,5 +178,5 @@ def test_no_offers_means_no_choice() -> None:
 
 
 def test_non_string_header_is_a_type_error() -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="expected str, got NoneType"):
         parse_accept(None)  # type: ignore[arg-type]
