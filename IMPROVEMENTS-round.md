@@ -11,8 +11,8 @@ Progress:
 - [x] Contracts: WPT corpus (local), cited RFC vectors, README examples run, typing
 - [x] Docs and packaging: README, CHANGELOG, metadata, installed-wheel e2e test
 - [x] Gates: ruff format, ruff check, mypy --strict, pytest
-- [ ] Mutation run: removing guarded logic makes the suite fail
-- [ ] Independent review findings fixed with regression tests
+- [x] Mutation run: removing guarded logic makes the suite fail
+- [x] Independent review findings fixed with regression tests
 - [ ] Pull request opened, guard clean
 
 ## Starting point
@@ -98,3 +98,54 @@ the sources below:
 - MIME sniffing from content bytes and the "minimize" step: they need the payload and a
   table of supported types, which is the job of a sniffing library.
 - RFC 2047 encoded words: they are not valid inside parameters.
+
+## Verification
+
+- Gates on CPython 3.13 (this PC): `ruff format --check .`, `ruff check .`,
+  `mypy --strict src` (and `src tests`) and `pytest` (282 passed, the wheel test skipped
+  without `MEDIAPARSE_E2E=1`); the suite also passes on CPython 3.11. With
+  `MEDIAPARSE_E2E=1` the installed-wheel test builds the wheel and sdist, checks their
+  contents, installs the wheel in a fresh venv and drives the API from an empty folder.
+  Without the fetched files the corpus tests skip.
+- Ground truth: all 955 web-platform-tests MIME type cases parse and serialize to the
+  browser output; RFC 9110 8.3.1 and 12.5.1 (Table 5 with erratum 7138), RFC 2231 3, 4
+  and 4.1 and RFC 8187 3.2.3 are checked as short cited vectors.
+- Guarded logic was removed one piece at a time. First run, 115 mutations: ten alive,
+  six of them killed by new tests (text after a closing quote, type checks, non-ASCII in
+  an encoded section, whitespace-only Accept elements in strict mode) and one removed as
+  dead code (a custom exception reducer). After the review fixes, 134 mutations: six
+  alive, one killed by a test; the rest are equivalent forms (a `"` in `qdtext` that the
+  quote check reaches first, `ValueError` versus its `UnicodeEncodeError` subclass, the
+  order of the type and subtype flags where `*/x` cannot occur) or are shadowed by a
+  later guard (a `q` above 1 rejected by `AcceptItem`, decode errors already excluded by
+  the charset checks).
+
+## Review fixes
+
+An independent review attacked the branch. Each finding below is fixed and has a test
+that fails on the code from before the fix:
+
+- `build(extended=True)` could write one name twice (`title` encoded as `title*` next to
+  a given `title*`). Emitted names are now checked, and names ending in `*` are refused
+  with `extended=True`.
+- In the default mode a malformed `q` (`q =0`, `q=`, a control character) was dropped
+  by the browser algorithm and read as weight 1, turning "not acceptable" into "best".
+  Such elements are now skipped.
+- `decode_extended` could raise `UnicodeError` or `ValueError` (the `undefined` codec,
+  a 5000-digit section number, odd charset strings), and it accepted Python codecs that
+  are not character sets (`unicode_escape`, `mbcs`, `oem`, `idna`, `punycode`). Section
+  numbers are capped at nine digits, charset names must use the RFC 8187 characters, and
+  those codecs are refused. Names now compare case-insensitively and keep their order.
+- Strict `parse_accept` accepted an element made of a bare LF; only spaces and tabs may
+  surround an element now.
+- `AcceptItem` checked nothing; it now requires a `MediaType` and a number from 0 to 1.
+- Wrong argument types raise `TypeError` everywhere (they raised `MediaTypeError` or
+  `AttributeError` in places), including a bare `str` passed as `offers`.
+- Error messages embedded the whole input (1 MB in, 1 MB message); they now show at most
+  80 characters.
+- Docs: the README states the extended-value rules, the malformed-weight rule and the
+  charset rules; the RFC Accept example no longer embeds the RFC's line wrap.
+- Not changed: `quality` and `negotiate` take the header text, not a parsed list, and
+  have no strict mode; `parse` keeps its tuple next to `parse_media_type` for
+  compatibility.
+

@@ -103,12 +103,17 @@ def test_invalid_parts_raise(main: str, subtype: str, params: tuple[tuple[str, s
         ("text", "plain", (("a", "1", "2"),)),
         ("text", "plain", ("ab",)),
         ("text", "plain", (["a", "b"],)),
-        ("text", "plain", {"a": "b"}),
     ],
 )
 def test_wrong_types_raise_type_error(main: object, subtype: object, params: object) -> None:
     with pytest.raises(TypeError):
         MediaType(main, subtype, params)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("params", [{"a": "b"}, "ab", None])
+def test_params_must_be_a_sequence_of_pairs(params: object) -> None:
+    with pytest.raises(TypeError, match="params must be a tuple of pairs"):
+        MediaType("text", "plain", params)  # type: ignore[arg-type]
 
 
 def test_a_non_string_value_raises_type_error() -> None:
