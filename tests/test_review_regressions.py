@@ -167,3 +167,10 @@ def test_a_non_ascii_character_position_counts_from_the_value_start() -> None:
     with pytest.raises(MediaTypeError) as caught:
         decode_extended({"a*": "utf-8''a\xe9"})
     assert caught.value.position == 8
+
+
+def test_whitespace_after_a_valid_weight_is_fine_and_inside_the_name_is_not() -> None:
+    for header in ("a/b;q=0.5 , c/d", "a/b;q=0.5\n, c/d", "a/b;q=0.5\t\r, c/d"):
+        assert [item.q for item in parse_accept(header)] == [0.5, 1.0], header
+    for header in ("a/b;q\n=0, c/d", "a/b;q\r=0, c/d", "a/b;q =0, c/d"):
+        assert parse_accept(header) == parse_accept("c/d"), header

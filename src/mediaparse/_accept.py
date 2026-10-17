@@ -107,6 +107,5 @@ def _raw_weights(element: str) -> list[bool]:
                 index += 1
         if ascii_lower(name.rstrip(HTTP_WHITESPACE)) == "q":
             value = element[value_start:index].rstrip(HTTP_WHITESPACE)
-            exact = name in ("q", "Q") and value_start <= index
-            found.append(exact and _QVALUE.fullmatch(value) is not None)
+            found.append(name in ("q", "Q") and _QVALUE.fullmatch(value) is not None)
     return found

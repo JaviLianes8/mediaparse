@@ -145,9 +145,9 @@ parameters, every kind of quoted-pair, bytes 0x80 to 0xFF) and on `build` output
 `tests/test_oracles.py`, which asserts each difference below.
 
 - `werkzeug.http.parse_options_header` (werkzeug 3.1.9) gives the same parameters on
-  every header. It keeps the case of the type (`Text/HTML`) and reads any name with
-  `*` as RFC 2231 (`t*=x` and `t*0=x` become `t`), where `mediaparse` leaves that to
-  `decode_extended`.
+  every header. It keeps the case of the type (`Text/HTML`) and reads a name ending in
+  `*`, or in `*` and a section number, as RFC 2231 (`t*=x` and `t*0=x` become `t`),
+  where `mediaparse` leaves that to `decode_extended`.
 - Python's `email.message.Message` (3.13) agrees on headers without a backslash, an
   empty parameter or a name with `*`. A quoted value ending in an escaped backslash
   (`x="a\\"`) runs past its closing quote, other escapes keep their backslash
@@ -168,8 +168,9 @@ All results are the same, checked on over 50,000 calls against the PyPI release,
 - `MediaType.get` and `AcceptItem.matches` raise `TypeError` (not `AttributeError`) for
   an argument of the wrong type.
 - `AcceptItem` refuses `*/subtype` ranges and a `q` inside the range.
-- In the default mode `parse_accept` skips an element whose `q` is a quoted string
-  (`q="0.5"`), as the strict mode refuses it; 0.2.0 read it as a weight.
+- In the default mode `parse_accept` skips an element with any `q` not written as
+  `q=qvalue`: a quoted `q="0.5"` (0.2.0 read it as a weight) or a malformed `q` after a
+  valid one (`q=0.5;q =1`, where 0.2.0 kept 0.5), as the strict mode refuses both.
 - `decode_extended` refuses the `charmap` codec.
 - Error positions: strict `parse_accept` errors on the weight or a `*/subtype` range
   now carry a position, the default parser points at the offending character rather
