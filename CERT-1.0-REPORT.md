@@ -155,3 +155,18 @@ oracle present) run with `-x` and a 300 s per-test limit. All 50 killed at once.
 | M48 | `_normalize.py` | charset value case kept | `_normalize.py::mediaparse._normalize.matches` |
 | M49 | `_errors.py` | messages not cut | `test_hostile.py::test_parsing_time_grows_linearly[accept list]` |
 | M50 | `_parse.py` | strict flag ignored | `_errors.py::mediaparse._errors.MediaTypeError` |
+
+## Packaging, e2e and Pythons (items 8, 10, 13, 14)
+
+- Full suite on another machine from a fresh clone at e981f60 with `MEDIAPARSE_E2E=1`,
+  `MEDIAPARSE_E2E_PYPI=1`, the 0.2.0 oracle, werkzeug and multipart: 434 passed, 4
+  skipped (the Node.js reference parser, not present there). The e2e tests build the wheel
+  and sdist, inspect both, install the wheel in a fresh venv and drive it from an empty
+  folder with `-I`, and install 0.2.0 from PyPI, then upgrade it in place to the built
+  wheel and check the same results and the full program again.
+- Every interpreter on this PC from `requires-python` up, the wheel installed in a fresh
+  venv and the sdist's own suite run with `src` removed (fetched sources, Node.js reference,
+  werkzeug, multipart and the 0.2.0 oracle present), at e981f60: CPython 3.10.19,
+  3.11.5, 3.12.12, 3.13.2, 3.14.2 and 3.14.2 free-threaded, 417 passed and 3 skipped
+  each (the three e2e tests, which need the source tree and run separately). 3.8 and 3.9
+  are below `requires-python`.
