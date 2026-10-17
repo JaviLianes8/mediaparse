@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from ._accept import AcceptItem, negotiate, parse_accept, quality
+from ._accept import parse_accept
+from ._acceptitem import AcceptItem
 from ._build import build
 from ._errors import MediaTypeError
 from ._mediatype import MediaType
+from ._negotiate import negotiate, quality
 from ._normalize import matches, normalize
 from ._parse import parse, parse_media_type
 from ._rfc2231 import decode_extended
 
-__version__ = "0.2.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "AcceptItem",

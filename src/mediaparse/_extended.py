@@ -14,7 +14,7 @@ def encode_extended(value: str) -> str:
     try:
         data = value.encode("utf-8")
     except UnicodeEncodeError as error:
-        raise MediaTypeError(f"value is not encodable as UTF-8: {value!r}") from error
+        raise MediaTypeError(f"value is not encodable as UTF-8: {show(value)}") from error
     encoded = "".join(chr(byte) if chr(byte) in ATTR_CHARS else f"%{byte:02X}" for byte in data)
     return f"UTF-8''{encoded}"
 

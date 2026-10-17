@@ -18,7 +18,7 @@ _INITIAL = re.compile(r"(?P<charset>[^']*)'(?P<language>[^']*)'(?P<rest>.*)", re
 _CHARSET = re.compile(r"[A-Za-z0-9!#$%&+\-^_`{}~]+")
 # Python text codecs that are not character sets: escape decoders, host code pages and
 # transforms. A header must not decide to run them.
-_NOT_CHARSETS = frozenset({"mbcs", "oem", "idna", "punycode", "undefined"})
+_NOT_CHARSETS = frozenset({"mbcs", "oem", "idna", "punycode", "undefined", "charmap"})
 
 
 def decode_extended(params: Mapping[str, str]) -> dict[str, str]:
@@ -30,7 +30,11 @@ def decode_extended(params: Mapping[str, str]) -> dict[str, str]:
     wins, as it is the one that carries the real value. The language tag is dropped.
     Gaps or leading zeros in the sections, a section given twice, a bad percent escape, a
     charset that is not a character set Python can decode, and bytes it cannot decode
-    raise :class:`MediaTypeError`.
+    raise :class:`MediaTypeError`; a name or value that is not a ``str`` raises :class:`TypeError`.
+
+    >>> from mediaparse import decode_extended
+    >>> decode_extended({"title*0*": "us-ascii'en'This%20is", "title*1": " fun", "a": "1"})
+    {'title': 'This is fun', 'a': '1'}
     """
     if not isinstance(params, Mapping):
         raise TypeError(f"params must be a mapping, got {type(params).__name__}")

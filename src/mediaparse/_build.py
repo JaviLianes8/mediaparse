@@ -19,6 +19,14 @@ def build(mimetype: str, params: Mapping[str, str] | None = None, *, extended: b
     ``extended=True`` such a value is written instead as ``name*=UTF-8''...``, the
     percent-encoded form of RFC 8187 and RFC 2231, and names may not end in ``*``. Two
     parameters that would be written under the same name raise :class:`MediaTypeError`.
+    Spaces and tabs around the media type and the names are dropped. A part of the wrong
+    type raises :class:`TypeError`.
+
+    >>> from mediaparse import build
+    >>> build("Text/Plain", {"charset": "utf-8", "title": "a; b"})
+    'text/plain; charset=utf-8; title="a; b"'
+    >>> build("text/plain", {"title": "café"}, extended=True)
+    "text/plain; title*=UTF-8''caf%C3%A9"
     """
     parts = [essence(mimetype)]
     if params is not None and not isinstance(params, Mapping):
