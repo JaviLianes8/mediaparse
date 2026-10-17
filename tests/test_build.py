@@ -107,3 +107,12 @@ def test_round_trip_through_build_and_parse() -> None:
     mimetype, params = "multipart/form-data", {"boundary": "a; b=c", "charset": "utf-8"}
     assert parse(build(mimetype, params)) == (mimetype, params)
     assert parse(build(mimetype, params), strict=True) == (mimetype, params)
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"T": "\x7f", "t": "x"}, {"t": "x", "T": "\xe9"}, {"title*0": "\xe9"}, {"a*b": "x"}],
+)
+def test_extended_names_are_unique_and_never_read_as_sections(params: dict[str, str]) -> None:
+    with pytest.raises(MediaTypeError):
+        build("a/b", params, extended=True)

@@ -69,8 +69,9 @@ is empty or not a token. Equality compares parameters in order; `matches` does n
 quotes only what needs quoting. It never writes a character that could split or corrupt
 the header: control characters other than tab, and anything outside ASCII, raise
 `MediaTypeError`, unless `extended=True`, which writes the value as an RFC 8187 /
-RFC 2231 extended value (`name*=UTF-8''...`). Spaces and tabs around the media type and
-the names are dropped; two names that are equal without case raise.
+RFC 2231 extended value (`name*=UTF-8''...`); names may then not hold `*`, so nothing
+reads as a section. Spaces and tabs around the media type and the names are dropped;
+two names that are equal without case raise, extended or not.
 
 ```python
 from mediaparse import build

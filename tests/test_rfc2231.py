@@ -1,7 +1,9 @@
 """``decode_extended``: RFC 2231 continuations and charset-encoded values.
 
 Vectors marked "RFC 2231" are cited from sections 3, 4 and 4.1 of
-https://www.rfc-editor.org/rfc/rfc2231.txt (header folding removed); the rest are
+https://www.rfc-editor.org/rfc/rfc2231.txt (header folding removed; the section 4.1 one in
+the form corrected by verified erratum 590, https://www.rfc-editor.org/errata/eid590,
+which adds the missing semicolons); the rest are
 hand-written from the grammar in section 7.
 """
 
@@ -34,7 +36,7 @@ def test_rfc_charset_example() -> None:
 
 
 def test_rfc_combined_example() -> None:
-    # RFC 2231 section 4.1.
+    # RFC 2231 section 4.1, as corrected by erratum 590.
     header = (
         "application/x-stuff; title*0*=us-ascii'en'This%20is%20even%20more%20; "
         'title*1*=%2A%2A%2Afun%2A%2A%2A%20; title*2="isn\'t it!"'
@@ -98,3 +100,9 @@ def test_other_parameters_pass_through() -> None:
 def test_malformed_extended_parameters_raise(params: dict[str, str]) -> None:
     with pytest.raises(MediaTypeError):
         decode_extended(params)
+
+
+def test_a_plain_first_section_means_us_ascii_for_the_rest() -> None:
+    with pytest.raises(MediaTypeError):
+        decode_extended({"t*0": "a", "t*1*": "%E9"})
+    assert decode_extended({"t*0": "a", "t*1*": "%41"}) == {"t": "aA"}
