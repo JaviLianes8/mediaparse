@@ -13,9 +13,11 @@ pip install -r requirements-dev.txt
 - Keep public API in `src/mediaparse/__init__.py`; internals live in `_`-prefixed modules.
 - Add a test for the behaviour you change. Tests inject time, disk and network; they
   never touch the real thing.
-- Run `python scripts/fetch_upstream.py` once: it downloads the web-platform-tests MIME
-  type files listed in `tests/upstream/MANIFEST.json`, which are not committed. Their
-  tests skip without them.
+- Run `python scripts/fetch_upstream.py` once: it downloads the specifications, IANA
+  registries and web-platform-tests files listed in `tests/upstream/MANIFEST.json`, which
+  are not committed. Their tests skip without them. The reference parsers are optional
+  too: `pip install werkzeug multipart` and
+  `npm install --prefix tests/upstream whatwg-mimetype@5.0.0`.
 - Run `scripts/check.ps1` (format, lint, types, tests) and make sure it passes. Set
   `MEDIAPARSE_E2E=1` to also build the wheel and test the installed package.
 - One logical change per commit, imperative subject line.

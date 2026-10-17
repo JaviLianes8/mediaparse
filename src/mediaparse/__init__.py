@@ -1,7 +1,5 @@
 """Parse and build HTTP media types, Content-Type and Accept headers, exactly."""
 
-from __future__ import annotations
-
 from ._accept import parse_accept
 from ._acceptitem import AcceptItem
 from ._build import build

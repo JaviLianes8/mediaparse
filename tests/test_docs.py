@@ -12,10 +12,11 @@ import mediaparse
 
 ROOT = Path(__file__).resolve().parents[1]
 README = (ROOT / "README.md").read_text(encoding="utf-8")
+GUIDE = (ROOT / "GUIDE.md").read_text(encoding="utf-8")
 
 
-def _python_blocks() -> list[str]:
-    return re.findall(r"```python\n(.*?)```", README, flags=re.DOTALL)
+def _python_blocks(text: str = README) -> list[str]:
+    return re.findall(r"```python\n(.*?)```", text, flags=re.DOTALL)
 
 
 def _expected_output(block: str) -> list[str]:
@@ -28,22 +29,37 @@ def _expected_output(block: str) -> list[str]:
     ]
 
 
-def test_every_readme_example_runs_and_prints_its_comment() -> None:
+def _run_blocks(text: str) -> int:
     checked = 0
-    for block in _python_blocks():
+    for block in _python_blocks(text):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            exec(compile(block, "README.md", "exec"), {"__name__": "readme"})
+            exec(compile(block, "docs", "exec"), {"__name__": "docs"})
         expected = _expected_output(block)
         assert expected, block
         assert out.getvalue().splitlines() == expected
         checked += len(expected)
+    return checked
+
+
+def test_every_readme_example_runs_and_prints_its_comment() -> None:
     assert len(_python_blocks()) == 5
-    assert checked == 15
+    assert _run_blocks(README) == 15
+
+
+def test_every_guide_example_runs_and_prints_its_comment() -> None:
+    assert len(_python_blocks(GUIDE)) == 4
+    assert _run_blocks(GUIDE) == 8
+
+
+def test_the_readme_links_are_absolute() -> None:
+    for target in re.findall(r"\]\(([^)]+)\)", README):
+        assert target.startswith("https://"), target
+    assert "GUIDE.md" in README and "CHANGELOG.md" in README
 
 
 def test_every_print_in_the_readme_shows_its_output() -> None:
-    for block in _python_blocks():
+    for block in _python_blocks() + _python_blocks(GUIDE):
         prints = [line for line in block.splitlines() if line.strip().startswith("print(")]
         assert len(prints) == len(_expected_output(block))
 

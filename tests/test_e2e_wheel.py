@@ -29,6 +29,15 @@ from mediaparse import (
 )
 
 assert "site-packages" in mediaparse.__file__, mediaparse.__file__
+assert mediaparse.__version__ == "1.0.0"
+public = sorted(name for name in dir(mediaparse) if not name.startswith("_"))
+assert sorted(mediaparse.__all__) == public, public
+try:
+    MediaType("a", "b").get(1)
+except TypeError:
+    pass
+else:
+    raise AssertionError("get accepted a non-str name")
 assert importlib.metadata.version("mediaparse") == mediaparse.__version__
 assert importlib.resources.files("mediaparse").joinpath("py.typed").is_file()
 media = parse_media_type('TEXT/HTML;charset="shift_jis"iso-2022-jp;charset=x')
@@ -63,33 +72,65 @@ def _run(*cmd: str | Path, cwd: Path | None = None) -> subprocess.CompletedProce
     return subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True, check=False)
 
 
-def test_installed_wheel_end_to_end(tmp_path: Path) -> None:
-    dist = tmp_path / "dist"
-    built = _run(sys.executable, "-m", "build", "--outdir", dist, ROOT)
+@pytest.fixture(scope="module")
+def dist(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    out = tmp_path_factory.mktemp("dist")
+    built = _run(sys.executable, "-m", "build", "--outdir", out, ROOT)
     assert built.returncode == 0, built.stderr
+    return out
+
+
+def _venv(folder: Path) -> Path:
+    venv.create(folder, with_pip=True)
+    return folder / ("Scripts" if sys.platform == "win32" else "bin") / "python"
+
+
+def _check(python: Path, work: Path) -> None:
+    # Run from an empty folder so the source tree cannot shadow the install.
+    work.mkdir(exist_ok=True)
+    result = _run(python, "-I", "-c", PROGRAM, cwd=work)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.decode().strip() == "e2e ok"
+
+
+def test_wheel_and_sdist_contents(dist: Path) -> None:
     (wheel,) = dist.glob("mediaparse-*.whl")
     (sdist,) = dist.glob("mediaparse-*.tar.gz")
     names = zipfile.ZipFile(wheel).namelist()
     assert "mediaparse/py.typed" in names
+    assert any(name.endswith("licenses/LICENSE") for name in names)
     assert not any(name.startswith("tests/") for name in names)
-    assert not any(name.endswith(".json") for name in names)
+    assert not any(name.endswith((".json", ".js", ".md")) for name in names)
     listing = _run(sys.executable, "-m", "tarfile", "-l", sdist).stdout.decode()
-    assert "IMPROVEMENTS-round" not in listing
-    assert "tests/upstream/MANIFEST.json" in listing
-    assert "wpt-mime-types.json" not in listing
-    assert "wpt-generated-mime-types.json" not in listing
-    assert "tests/test_wpt.py" in listing
+    for absent in ("IMPROVEMENTS-round", "CERT-1.0-REPORT", ".txt", ".xml", ".html", "wpt-"):
+        assert absent not in listing.replace("requirements-dev.txt", ""), absent
+    assert "node_modules" not in listing
+    for present in ("tests/upstream/MANIFEST.json", "tests/test_wpt.py", "GUIDE.md", "LICENSE"):
+        assert present in listing, present
 
-    env_dir = tmp_path / "venv"
-    venv.create(env_dir, with_pip=True)
-    bindir = env_dir / ("Scripts" if sys.platform == "win32" else "bin")
-    python = bindir / "python"
+
+def test_installed_wheel_end_to_end(dist: Path, tmp_path: Path) -> None:
+    (wheel,) = dist.glob("mediaparse-*.whl")
+    python = _venv(tmp_path / "venv")
     installed = _run(python, "-m", "pip", "install", "-q", wheel)
     assert installed.returncode == 0, installed.stderr
+    _check(python, tmp_path / "work")
 
-    # Run from an empty folder so the source tree cannot shadow the install.
-    work = tmp_path / "work"
-    work.mkdir()
-    result = _run(python, "-I", "-c", PROGRAM, cwd=work)
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.decode().strip() == "e2e ok"
+
+@pytest.mark.skipif(
+    os.environ.get("MEDIAPARSE_E2E_PYPI") != "1", reason="set MEDIAPARSE_E2E_PYPI=1 to use PyPI"
+)
+def test_upgrade_in_place_from_the_pypi_release(dist: Path, tmp_path: Path) -> None:
+    (wheel,) = dist.glob("mediaparse-*.whl")
+    python = _venv(tmp_path / "venv")
+    old = _run(python, "-m", "pip", "install", "-q", "mediaparse==0.2.0")
+    assert old.returncode == 0, old.stderr
+    probe = "import mediaparse; print(mediaparse.__version__, mediaparse.parse('a/b;c=1'))"
+    before = _run(python, "-I", "-c", probe, cwd=tmp_path)
+    assert before.stdout.decode().split()[0] == "0.2.0"
+    upgraded = _run(python, "-m", "pip", "install", "-q", "--upgrade", wheel)
+    assert upgraded.returncode == 0, upgraded.stderr
+    after = _run(python, "-I", "-c", probe, cwd=tmp_path)
+    assert after.stdout.decode().split()[0] == "1.0.0"
+    assert after.stdout.decode().split(None, 1)[1] == before.stdout.decode().split(None, 1)[1]
+    _check(python, tmp_path / "work")

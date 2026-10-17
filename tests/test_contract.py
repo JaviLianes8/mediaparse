@@ -26,6 +26,11 @@ def test_all_lists_exactly_the_public_api() -> None:
     assert sorted(mediaparse.__all__) == sorted(PUBLIC_API)
 
 
+def test_nothing_else_is_public_at_the_package_top() -> None:
+    public = [name for name in dir(mediaparse) if not name.startswith("_")]
+    assert sorted(public) == sorted(PUBLIC_API)
+
+
 def test_every_exported_name_resolves() -> None:
     for name in mediaparse.__all__:
         assert hasattr(mediaparse, name)
