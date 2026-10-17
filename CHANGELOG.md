@@ -47,7 +47,7 @@ signatures, defaults and error types follow Semantic Versioning from this releas
 ### Fixed
 
 - `build(..., extended=True)` wrote two fields for names equal without case when one
-  value needed encoding (`{"T": "", "t": "x"}`), losing one on decode; it now raises
+  value needed encoding (`{"T": "\x7f", "t": "x"}`), losing one on decode; it now raises
   as it does without `extended`. It also refuses a `*` anywhere in a name (only a final
   `*` was refused), so `title*0` can no longer be read back as a section of `title`.
 - Error messages stay short for any input: a huge value that could not be encoded by
