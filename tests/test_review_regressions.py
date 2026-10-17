@@ -149,3 +149,21 @@ def test_positions_point_at_the_offending_character(call: Any, position: int) ->
     with pytest.raises(MediaTypeError) as caught:
         call()
     assert caught.value.position == position
+
+
+@pytest.mark.parametrize(
+    "element",
+    ["a/b;\nq =0", "a/b;\rQ =0", 'a/b;q=0.5;q="1"', "a/b;q=0.5;q =1", "a/b;q=0.5;q=2", "a/b;q"],
+)
+def test_every_q_of_an_element_must_be_well_formed(element: str) -> None:
+    assert parse_accept(element + ", c/d") == parse_accept("c/d")
+
+
+def test_a_repeated_well_formed_q_keeps_the_first() -> None:
+    assert [item.q for item in parse_accept("a/b;q=0.5;Q=0.7")] == [0.5]
+
+
+def test_a_non_ascii_character_position_counts_from_the_value_start() -> None:
+    with pytest.raises(MediaTypeError) as caught:
+        decode_extended({"a*": "utf-8''a\xe9"})
+    assert caught.value.position == 8

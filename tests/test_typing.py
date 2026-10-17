@@ -26,6 +26,9 @@ parse(b"t/s")
 build("t/s", {"a": 1})
 parse("t/s", True)
 negotiate("*/*", "t/s", 1)
+reveal_type(parse_media_type("t/s").get("a", "b"))
+reveal_type(parse_media_type("t/s").get("a", default="b"))
+reveal_type(parse_media_type("t/s").get("a"))
 """
 
 
@@ -62,6 +65,11 @@ def test_functions_return_the_documented_types(mypy_output: str) -> None:
         "str | None",
         "dict[str, str]",
     ]
+
+
+def test_get_with_a_str_default_is_a_str(mypy_output: str) -> None:
+    revealed = [_revealed(mypy_output, line) for line in (16, 17, 18)]
+    assert revealed == ["str", "str", "str | None"]
 
 
 def test_misuse_is_rejected(mypy_output: str) -> None:

@@ -92,7 +92,8 @@ values lower-cased (they are case insensitive, RFC 2046) and `"; "` between part
 `parse_accept` splits on commas outside quoted strings and ignores empty elements. The
 `q` parameter is the weight wherever it appears; it must match the RFC 9110 `qvalue`
 grammar (`0` to `1`, at most three decimals, not quoted). In the default mode an invalid element is
-skipped, including one whose `q` is malformed (`q =0`, `q=`), so a broken weight never
+skipped, including one with any malformed `q` (`q =0`, `q=`, `q="1"`, even after a
+valid `q`), so a broken weight never
 counts as 1; with `strict=True` it raises.
 
 `quality(accept, offer)` is the weight of the most specific range that covers the offer
@@ -144,8 +145,8 @@ parameters, every kind of quoted-pair, bytes 0x80 to 0xFF) and on `build` output
 `tests/test_oracles.py`, which asserts each difference below.
 
 - `werkzeug.http.parse_options_header` (werkzeug 3.1.9) gives the same parameters on
-  every header. It keeps the case of the type (`Text/HTML`) and reads a name ending in
-  `*` as RFC 2231 (`t*=x` becomes `t`), where `mediaparse` leaves that to
+  every header. It keeps the case of the type (`Text/HTML`) and reads any name with
+  `*` as RFC 2231 (`t*=x` and `t*0=x` become `t`), where `mediaparse` leaves that to
   `decode_extended`.
 - Python's `email.message.Message` (3.13) agrees on headers without a backslash, an
   empty parameter or a name with `*`. A quoted value ending in an escaped backslash
@@ -156,6 +157,9 @@ parameters, every kind of quoted-pair, bytes 0x80 to 0xFF) and on `build` output
   parameter names and drops the others; a tab after `;` hides the parameter, other
   escapes keep their backslash and a `filename` is cut to its last path part. Without
   those it agrees.
+
+On a repeated parameter (a header the RFC calls an error) werkzeug and multipart keep
+the last value; the default mode here keeps the first, as browsers do.
 
 ## Upgrading from 0.2.0
 

@@ -58,14 +58,12 @@ def _strict_item(element: str, start: int) -> AcceptItem:
 
 def _lenient_item(element: str) -> AcceptItem:
     media = parse_lenient(element)
+    # The browser algorithm drops a malformed q (q =0, q=, q="1", a control character);
+    # reading it as the default weight 1, or letting another q win, would turn a weight
+    # the sender wrote into a different one. Every q must be well formed.
     weight = media.get("q")
-    quoted = _raw_weights(element)
-    # The browser algorithm drops a malformed q (q =0, q=, a control character) and keeps
-    # a quoted one; reading either as the default weight 1 would make it the best range.
-    if (weight is None and quoted) or True in quoted:
+    if not all(_raw_weights(element)) or (weight and _QVALUE.fullmatch(weight) is None):
         raise MediaTypeError("invalid weight")
-    if weight is not None and _QVALUE.fullmatch(weight) is None:
-        raise MediaTypeError(f"invalid weight q={show(weight)}")
     return _with_weight(media, weight)
 
 
@@ -91,7 +89,8 @@ def _elements(header: str) -> Iterator[tuple[int, str]]:
 
 
 def _raw_weights(element: str) -> list[bool]:
-    """For each parameter written as ``q`` (trimmed, any case), whether its value is quoted."""
+    """For each parameter named ``q`` (any case, trimmed), whether it is written exactly
+    ``q=qvalue``: no space before ``=``, an unquoted value of the qvalue grammar."""
     found: list[bool] = []
     index, length = element.find(";"), len(element)
     while 0 <= index < length:
@@ -99,11 +98,15 @@ def _raw_weights(element: str) -> list[bool]:
         start = index
         while index < length and element[index] not in ";=":
             index += 1
-        if ascii_lower(element[start:index].strip(HTTP_WHITESPACE)) == "q":
-            found.append(element[index + 1 : index + 2] == '"')
+        name = element[start:index].lstrip(HTTP_WHITESPACE)
+        value_start = index + 1
         while index < length and element[index] != ";":
             if element[index] == '"':
                 _, index = collect_quoted(element, index)
             else:
                 index += 1
+        if ascii_lower(name.rstrip(HTTP_WHITESPACE)) == "q":
+            value = element[value_start:index].rstrip(HTTP_WHITESPACE)
+            exact = name in ("q", "Q") and value_start <= index
+            found.append(exact and _QVALUE.fullmatch(value) is not None)
     return found
