@@ -34,6 +34,14 @@ signatures, defaults and error types follow Semantic Versioning from this releas
   `MediaTypeError`; both were accepted when built by hand, though no parser produced them.
 - `decode_extended` refuses the `charmap` codec as a charset, like the other Python
   codecs that are not character sets.
+- `parse_accept` in its default mode skips an element whose `q` is written as a quoted
+  string (`q="0.5"`), which the `qvalue` grammar does not allow; 0.2.0 read it as a
+  weight. The strict mode already refused it.
+- `MediaTypeError.position`: strict `parse_accept` errors on a weight or a `*/subtype`
+  range now carry the position in the header, and the message counts positions the same
+  way; the default parser points at the offending character instead of the start of the
+  type or subtype; `decode_extended` counts from the start of the parameter value.
+- `MediaType.get` has overloads, so `get(name, "default")` is typed `str`.
 
 ### Fixed
 

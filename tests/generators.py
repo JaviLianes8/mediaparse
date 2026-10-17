@@ -52,3 +52,20 @@ def noise(rng: random.Random, longest: int = 25) -> str:
     if rng.random() < 0.5:
         text = rng.choice(["text/plain", "a/b", " TEXT/Html ", "x/y;", "*/*;q=0.5,"]) + text
     return text
+
+
+def grammar_header(rng: random.Random, names: str = TCHAR) -> str:
+    """Any header the RFC 9110 media-type rule allows: spaces and tabs around ";", empty
+    parameters, quoted strings with every kind of quoted-pair and obs-text."""
+    pieces = ["\t", " ", "!", "#", "a", "[", "]", "~", "\xe9", "\\x", '\\"', "\\\\", "\\\xe9"]
+    header = f"{token(rng)}/{token(rng)}"
+    used: set[str] = set()
+    for _ in range(rng.randint(0, 4)):
+        header += rng.choice(["", " ", "\t", "  "]) + ";" + rng.choice(["", " ", "\t"])
+        name = token(rng, names, 5)
+        if rng.random() < 0.15 or name.lower() in used:
+            continue
+        used.add(name.lower())
+        quoted = '"' + "".join(rng.choice(pieces) for _ in range(rng.randint(0, 6))) + '"'
+        header += f"{name}={token(rng) if rng.random() < 0.5 else quoted}"
+    return header + rng.choice(["", " "])

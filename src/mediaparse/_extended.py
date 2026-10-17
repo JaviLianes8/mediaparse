@@ -19,8 +19,11 @@ def encode_extended(value: str) -> str:
     return f"UTF-8''{encoded}"
 
 
-def percent_decode(text: str) -> bytes:
-    """Decode ``%XX`` escapes; other characters must be ASCII and are kept as they are."""
+def percent_decode(text: str, base: int = 0) -> bytes:
+    """Decode ``%XX`` escapes; other characters must be ASCII and are kept as they are.
+
+    Error positions are counted from ``base``.
+    """
     out = bytearray()
     index, length = 0, len(text)
     while index < length:
@@ -28,13 +31,15 @@ def percent_decode(text: str) -> bytes:
         if char == "%":
             pair = text[index + 1 : index + 3]
             if len(pair) != 2 or pair[0] not in _HEX or pair[1] not in _HEX:
-                raise MediaTypeError(f"invalid percent escape in {show(text)}", position=index)
+                raise MediaTypeError(
+                    f"invalid percent escape in {show(text)}", position=base + index
+                )
             out.append(int(pair, 16))
             index += 3
             continue
         if not char.isascii():
             raise MediaTypeError(
-                f"non-ASCII character in encoded value {show(text)}", position=index
+                f"non-ASCII character in encoded value {show(text)}", position=base + index
             )
         out.append(ord(char))
         index += 1

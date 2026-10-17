@@ -15,12 +15,15 @@ from ._mediatype import MediaType
 from ._tokens import OWS, TOKEN_CHARS, ascii_lower
 
 
-def parse_strict(text: str, quoted: set[str] | None = None) -> MediaType:
+def parse_strict(
+    text: str, values: dict[str, tuple[int, bool]] | None = None, offset: int = 0
+) -> MediaType:
     """Parse ``text`` against the RFC 9110 grammar, raising on the first deviation.
 
-    The names of parameters written as quoted strings are added to ``quoted`` if given.
+    Positions in errors are counted from ``offset``. If ``values`` is given, it receives
+    for each parameter name the position of its value and whether it was quoted.
     """
-    reader = _Reader(text)
+    reader = _Reader(text, offset)
     reader.skip_ows()
     main = reader.token("media type")
     reader.expect("/")
@@ -37,21 +40,23 @@ def parse_strict(text: str, quoted: set[str] | None = None) -> MediaType:
         start = reader.position
         name = ascii_lower(reader.token("parameter name"))
         if name in params:
-            raise MediaTypeError(f"parameter {show(name)} is given more than once", position=start)
+            where = offset + start
+            raise MediaTypeError(f"parameter {show(name)} is given more than once", position=where)
         reader.expect("=")
+        if values is not None:
+            values[name] = (offset + reader.position, reader.peek() == '"')
         if reader.peek() == '"':
             params[name] = reader.quoted()
-            if quoted is not None:
-                quoted.add(name)
         else:
             params[name] = reader.token("value")
     return MediaType(main, subtype, tuple(params.items()))
 
 
 class _Reader:
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, offset: int) -> None:
         self.text = text
         self.position = 0
+        self.offset = offset
 
     def done(self) -> bool:
         return self.position >= len(self.text)
@@ -63,8 +68,8 @@ class _Reader:
         found = self.peek()
         where = f"found {found!r}" if found else "found the end"
         return MediaTypeError(
-            f"{message} at position {self.position}, {where}: {show(self.text)}",
-            position=self.position,
+            f"{message} at position {self.offset + self.position}, {where}: {show(self.text)}",
+            position=self.offset + self.position,
         )
 
     def skip_ows(self) -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from mediaparse import (
@@ -130,3 +132,20 @@ def test_wrong_container_types_raise_type_error() -> None:
 
 def test_quality_of_a_malformed_weight_is_zero() -> None:
     assert quality("text/html;q=, */*;q=0.2", "text/html") == 0.2
+
+
+@pytest.mark.parametrize(
+    ("call", "position"),
+    [
+        (lambda: parse("te(t/html"), 2),
+        (lambda: parse(" a/b c"), 4),
+        (lambda: parse("/x"), 0),
+        (lambda: parse("\ta/"), 3),
+        (lambda: decode_extended({"a*": "utf-8''ab%zz"}), 9),
+        (lambda: decode_extended({"a*0*": "utf-8''a", "a*1*": "%z"}), 0),
+    ],
+)
+def test_positions_point_at_the_offending_character(call: Any, position: int) -> None:
+    with pytest.raises(MediaTypeError) as caught:
+        call()
+    assert caught.value.position == position

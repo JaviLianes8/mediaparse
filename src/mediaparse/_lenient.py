@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ._errors import MediaTypeError, show
 from ._mediatype import MediaType
-from ._tokens import HTTP_WHITESPACE, ascii_lower, is_quotable, is_token
+from ._tokens import HTTP_WHITESPACE, TOKEN_CHARS, ascii_lower, is_quotable, is_token
 
 
 def parse_lenient(text: str) -> MediaType:
@@ -19,7 +19,7 @@ def parse_lenient(text: str) -> MediaType:
     slash = data.find("/")
     main = data if slash < 0 else data[:slash]
     if not is_token(main):
-        raise MediaTypeError(f"invalid media type: {show(text)}", position=offset)
+        raise MediaTypeError(f"invalid media type: {show(text)}", position=offset + _bad(main))
     if slash < 0:
         raise MediaTypeError(
             f"media type has no subtype: {show(text)}", position=offset + len(data)
@@ -27,7 +27,8 @@ def parse_lenient(text: str) -> MediaType:
     end = _find(data, ";", slash + 1)
     subtype = data[slash + 1 : end].rstrip(HTTP_WHITESPACE)
     if not is_token(subtype):
-        raise MediaTypeError(f"invalid media subtype: {show(text)}", position=offset + slash + 1)
+        where = offset + slash + 1 + _bad(subtype)
+        raise MediaTypeError(f"invalid media subtype: {show(text)}", position=where)
     params: dict[str, str] = {}
     position, length = end, len(data)
     while position < length:
@@ -76,6 +77,11 @@ def collect_quoted(data: str, position: int) -> tuple[str, int]:
             position += 1
         chars.append(char)
     return "".join(chars), position
+
+
+def _bad(part: str) -> int:
+    """Index of the first character of ``part`` that is not a token character."""
+    return next((i for i, char in enumerate(part) if char not in TOKEN_CHARS), len(part))
 
 
 def _find(data: str, char: str, start: int) -> int:

@@ -101,7 +101,7 @@ def test_media_type_error_is_a_value_error_with_a_position_that_pickles() -> Non
         lambda: MediaType("a", 1),  # type: ignore[arg-type]
         lambda: MediaType("a", "b", "x=1"),  # type: ignore[arg-type]
         lambda: MediaType("a", "b", (("x",),)),  # type: ignore[arg-type]
-        lambda: MediaType("a", "b").get(1),  # type: ignore[arg-type]
+        lambda: MediaType("a", "b").get(1),  # type: ignore[call-overload]
         lambda: AcceptItem("a/b"),  # type: ignore[arg-type]
         lambda: AcceptItem(MediaType("a", "b"), True),
         lambda: AcceptItem(MediaType("a", "b"), "1"),  # type: ignore[arg-type]

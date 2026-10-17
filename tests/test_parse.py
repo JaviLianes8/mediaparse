@@ -111,7 +111,7 @@ def test_no_valid_type_and_subtype_raises(text: str) -> None:
 
 
 @pytest.mark.parametrize(
-    ("text", "position"), [("  text/h(tml", 7), ("  te xt/html", 2), (" text", 5)]
+    ("text", "position"), [("  text/h(tml", 8), ("  te xt/html", 4), (" text", 5)]
 )
 def test_the_error_points_at_the_bad_part(text: str, position: int) -> None:
     with pytest.raises(MediaTypeError) as caught:

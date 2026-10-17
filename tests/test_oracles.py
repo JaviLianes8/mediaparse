@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 import shutil
 import subprocess
 from email.message import Message
@@ -18,7 +19,7 @@ from pathlib import Path
 
 import pytest
 from conftest import UPSTREAM, read_upstream
-from generators import media_params, noise, unicode_text
+from generators import TCHAR, grammar_header, media_params, noise, unicode_text
 
 from mediaparse import MediaTypeError, build, decode_extended, parse, parse_media_type
 
@@ -59,44 +60,74 @@ def test_the_reference_implementation_agrees_on_the_wpt_corpus() -> None:
     assert [_ours(text) for text in texts] == _whatwg(texts)
 
 
-def _corpus(seed: int, names: str | None = None) -> list[tuple[str, tuple[str, dict[str, str]]]]:
+def _corpus(seed: int, names: str = TCHAR) -> list[tuple[str, tuple[str, dict[str, str]]]]:
+    """Headers from the whole RFC 9110 grammar (half of them), and from build (half)."""
     rng = random.Random(seed)
     out = []
-    for _ in range(3000):
-        essence, params = media_params(rng) if names is None else media_params(rng, names)
-        header = build(essence, params)
+    for _ in range(4000):
+        header = grammar_header(rng, names)
         out.append((header, parse(header, strict=True)))
+        built = build(*media_params(rng, names))
+        out.append((built, parse(built, strict=True)))
     return out
 
 
-def test_email_agrees_except_on_an_escaped_backslash_before_the_quote() -> None:
-    differ = []
+def _email(header: str) -> tuple[str, dict[str, str]]:
+    message = Message()
+    message["Content-Type"] = header
+    return message.get_content_type(), dict((message.get_params() or [])[1:])
+
+
+def test_email_agrees_on_headers_without_its_known_differences() -> None:
+    compared = 0
     for header, expected in _corpus(4):
-        message = Message()
-        message["Content-Type"] = header
-        got = (message.get_content_type(), dict((message.get_params() or [])[1:]))
-        if got != expected:
-            differ.append(header)
-    # CPython's email reads '\\"' as an escaped quote: the value then runs past its end.
-    assert differ
-    assert all('\\\\"' in header for header in differ)
+        starred = any("*" in name for name in expected[1])
+        if "\\" in header or re.search(r";[ \t]*(;|$)", header) or starred:
+            continue
+        assert _email(header) == expected, header
+        compared += 1
+    assert compared > 3000
+    # Its differences: a quoted value ending in an escaped backslash runs past the quote,
+    # other escapes keep their backslash, empty parameters appear, name* is RFC 2231.
+    assert _email('a/b; x="a\\\\"; y=1')[1] == {"x": '"a\\\\"; y=1'}
+    assert _email('a/b; x="\\G"')[1] == {"x": "\\G"}
+    assert "" in _email("a/b; x=1;")[1]
+    assert _email("a/b; t*=x")[1] != parse("a/b; t*=x")[1]
 
 
-def test_werkzeug_agrees_on_every_valid_header() -> None:
+def test_werkzeug_agrees_except_on_type_case_and_starred_names() -> None:
     http = pytest.importorskip("werkzeug.http")
+    compared = 0
     for header, expected in _corpus(5):
-        assert http.parse_options_header(header) == expected, header
+        if any("*" in name for name in expected[1]):
+            continue
+        essence, params = http.parse_options_header(header)
+        assert (essence.lower(), params) == expected, header
+        compared += 1
+    assert compared > 6000
+    assert http.parse_options_header("Text/HTML")[0] == "Text/HTML"
+    assert http.parse_options_header("a/b; t*=x")[1] == {"t": "x"}
 
 
-def test_multipart_agrees_within_its_name_grammar() -> None:
+def test_multipart_agrees_within_its_grammar() -> None:
     multipart = pytest.importorskip("multipart")
     # multipart accepts parameter names made of letters, digits, "-" and "_" only.
     names = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-    for header, (essence, params) in _corpus(6, names):
-        if "filename" in params:
+    compared = 0
+    for header, expected in _corpus(6, names):
+        if "\\" in header or re.search(r";[ \t]*\t", header) or "filename" in expected[1]:
             continue
-        got = multipart.parse_options_header(header)
-        assert got == (essence, params), header
+        assert multipart.parse_options_header(header) == expected, header
+        compared += 1
+    assert compared > 3000
+    # Its differences: a tab after ";" hides the parameter, other escapes keep their
+    # backslash, a filename is cut to its last path part, other names are dropped.
+    assert multipart.parse_options_header("a/b;\tx=1") == ("a/b", {})
+    assert multipart.parse_options_header('a/b; x="\\G"')[1] == {"x": "\\G"}
+    assert multipart.parse_options_header('a/b; filename="C:\\\\d\\\\a.txt"')[1] == {
+        "filename": "a.txt"
+    }
+    assert multipart.parse_options_header("a/b; x.y=1")[1] == {}
 
 
 def _extended_cases(seed: int) -> list[tuple[str, str]]:

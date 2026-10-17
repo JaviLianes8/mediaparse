@@ -105,6 +105,8 @@ def test_the_documented_changes_and_nothing_else(old: ModuleType) -> None:
             call(mediaparse)
     assert old.AcceptItem(old.MediaType("*", "b")).q == 1.0
     assert old.decode_extended({"a*": "charmap''%41"}) == {"a": "A"}
+    assert [item.q for item in old.parse_accept('a/b;q="0.5"')] == [0.5]
+    assert mediaparse.parse_accept('a/b;q="0.5"') == []
     for refused in (
         lambda: mediaparse.AcceptItem(mediaparse.MediaType("*", "b")),
         lambda: mediaparse.decode_extended({"a*": "charmap''%41"}),

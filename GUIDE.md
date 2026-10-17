@@ -91,7 +91,7 @@ values lower-cased (they are case insensitive, RFC 2046) and `"; "` between part
 
 `parse_accept` splits on commas outside quoted strings and ignores empty elements. The
 `q` parameter is the weight wherever it appears; it must match the RFC 9110 `qvalue`
-grammar (`0` to `1`, at most three decimals). In the default mode an invalid element is
+grammar (`0` to `1`, at most three decimals, not quoted). In the default mode an invalid element is
 skipped, including one whose `q` is malformed (`q =0`, `q=`), so a broken weight never
 counts as 1; with `strict=True` it raises.
 
@@ -126,25 +126,48 @@ be one Python decodes as text; codecs that are not character sets (escape decode
 
 ## Errors
 
-- `MediaTypeError`, a `ValueError`, for invalid text or values. `position` is set when
-  the error comes from parsing text. Messages quote at most 80 characters of the input.
+- `MediaTypeError`, a `ValueError`, for invalid text or values. `position` is the index
+  of the first offending character in the text being read: the value for `parse` and
+  `parse_media_type`, the whole header for `parse_accept` with `strict=True`, the
+  parameter value for `decode_extended`. It is `None` for errors that do not come from
+  reading text (a value given to `build` or `MediaType`, a bad charset name, missing
+  RFC 2231 sections). Messages quote at most 80 characters of the input.
 - `TypeError` for an argument of the wrong type.
+
+The parameter names of every function are part of the API and stay as they are, so a
+call such as `parse(header=...)` keeps working.
 
 ## Compared with other parsers
 
-Measured on generated RFC 9110 valid headers (see `tests/test_oracles.py`):
+Measured on headers from the whole RFC 9110 grammar (spaces and tabs around `;`, empty
+parameters, every kind of quoted-pair, bytes 0x80 to 0xFF) and on `build` output; see
+`tests/test_oracles.py`, which asserts each difference below.
 
-- `werkzeug.http.parse_options_header` (werkzeug 3.1.9) agrees on every header,
-  RFC 2231 values included.
-- Python's `email.message.Message` (3.13) agrees except where a quoted value ends in an
-  escaped backslash (`x="a\\"`): it reads past the closing quote. It also keeps both
-  values of a repeated parameter.
+- `werkzeug.http.parse_options_header` (werkzeug 3.1.9) gives the same parameters on
+  every header. It keeps the case of the type (`Text/HTML`) and reads a name ending in
+  `*` as RFC 2231 (`t*=x` becomes `t`), where `mediaparse` leaves that to
+  `decode_extended`.
+- Python's `email.message.Message` (3.13) agrees on headers without a backslash, an
+  empty parameter or a name with `*`. A quoted value ending in an escaped backslash
+  (`x="a\\"`) runs past its closing quote, other escapes keep their backslash
+  (`"\G"` reads as `\G`), an empty parameter (`a/b; x=1;`) adds a `""` name, and both
+  values of a repeated parameter are kept.
 - `multipart.parse_options_header` (2.0.1) accepts only letters, digits, `-` and `_` in
-  parameter names and drops the other parameters; within that set it agrees.
+  parameter names and drops the others; a tab after `;` hides the parameter, other
+  escapes keep their backslash and a `filename` is cut to its last path part. Without
+  those it agrees.
 
 ## Upgrading from 0.2.0
 
 All results are the same, checked on over 50,000 calls against the PyPI release, except:
-`MediaType.get` and `AcceptItem.matches` raise `TypeError` (not `AttributeError`) for an
-argument of the wrong type; `AcceptItem` refuses `*/subtype` ranges and a `q` inside the
-range; `decode_extended` refuses the `charmap` codec; some error messages are shorter.
+
+- `MediaType.get` and `AcceptItem.matches` raise `TypeError` (not `AttributeError`) for
+  an argument of the wrong type.
+- `AcceptItem` refuses `*/subtype` ranges and a `q` inside the range.
+- In the default mode `parse_accept` skips an element whose `q` is a quoted string
+  (`q="0.5"`), as the strict mode refuses it; 0.2.0 read it as a weight.
+- `decode_extended` refuses the `charmap` codec.
+- Error positions: strict `parse_accept` errors on the weight or a `*/subtype` range
+  now carry a position, the default parser points at the offending character rather
+  than the start of the part, and `decode_extended` counts from the start of the value.
+  Some error messages are shorter.

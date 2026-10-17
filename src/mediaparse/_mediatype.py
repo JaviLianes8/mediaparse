@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import overload
 
 from ._errors import MediaTypeError, show
 from ._tokens import ascii_lower, is_quotable, is_token, quote
@@ -91,6 +92,12 @@ class MediaType:
         """
         return dict(self.params)
 
+    @overload
+    def get(self, name: str) -> str | None: ...
+    @overload
+    def get(self, name: str, default: str) -> str: ...
+    @overload
+    def get(self, name: str, default: None) -> str | None: ...
     def get(self, name: str, default: str | None = None) -> str | None:
         """Return a parameter value by case-insensitive name, or ``default``.
 

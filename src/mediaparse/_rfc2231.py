@@ -74,14 +74,16 @@ def _join(attr: str, slot: dict[int, tuple[bool, str]]) -> str:
     data = bytearray()
     for index in range(len(slot)):
         encoded, value = slot[index]
+        base = 0
         if encoded and index == 0:
             initial = _INITIAL.fullmatch(value)
             if initial is None:
                 raise MediaTypeError(f"parameter {label} lacks the charset'language' prefix")
             charset = initial["charset"] or "us-ascii"
+            base = len(value) - len(initial["rest"])
             value = initial["rest"]
         if encoded:
-            data += percent_decode(value)
+            data += percent_decode(value, base)
         elif value.isascii():
             data += value.encode("ascii")
         else:

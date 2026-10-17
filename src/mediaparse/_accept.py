@@ -37,29 +37,43 @@ def parse_accept(header: str, *, strict: bool = False) -> list[AcceptItem]:
         if not element.strip(OWS if strict else HTTP_WHITESPACE):
             continue
         try:
-            items.append(_item(element, strict))
-        except MediaTypeError as error:
+            items.append(_strict_item(element, start) if strict else _lenient_item(element))
+        except MediaTypeError:
             if strict:
-                where = None if error.position is None else start + error.position
-                raise MediaTypeError(str(error), position=where) from None
+                raise
     return items
 
 
-def _item(element: str, strict: bool) -> AcceptItem:
-    quoted: set[str] = set()
-    media = parse_strict(element, quoted) if strict else parse_lenient(element)
+def _strict_item(element: str, start: int) -> AcceptItem:
+    values: dict[str, tuple[int, bool]] = {}
+    media = parse_strict(element, values, start)
+    if media.type == "*" and media.subtype != "*":
+        where = start + len(element) - len(element.lstrip(OWS))
+        raise MediaTypeError(f"invalid media range: {show(media.essence)}", position=where)
     weight = media.get("q")
-    if weight is None and not strict and "q" in _raw_names(element):
-        # The browser algorithm dropped a malformed q (q =0, q=, a control character);
-        # reading it as the default weight 1 would turn "not acceptable" into "best".
+    if weight is not None and (values["q"][1] or _QVALUE.fullmatch(weight) is None):
+        raise MediaTypeError(f"invalid weight q={show(weight)}", position=values["q"][0])
+    return _with_weight(media, weight)
+
+
+def _lenient_item(element: str) -> AcceptItem:
+    media = parse_lenient(element)
+    weight = media.get("q")
+    quoted = _raw_weights(element)
+    # The browser algorithm drops a malformed q (q =0, q=, a control character) and keeps
+    # a quoted one; reading either as the default weight 1 would make it the best range.
+    if (weight is None and quoted) or True in quoted:
         raise MediaTypeError("invalid weight")
-    q = 1.0
-    if weight is not None:
-        if _QVALUE.fullmatch(weight) is None or "q" in quoted:
-            raise MediaTypeError(f"invalid weight q={show(weight)}")
-        q = float(weight)
+    if weight is not None and _QVALUE.fullmatch(weight) is None:
+        raise MediaTypeError(f"invalid weight q={show(weight)}")
+    return _with_weight(media, weight)
+
+
+def _with_weight(media: MediaType, weight: str | None) -> AcceptItem:
     rest = tuple(pair for pair in media.params if pair[0] != "q")
-    return AcceptItem(MediaType(media.type, media.subtype, rest), q)
+    return AcceptItem(
+        MediaType(media.type, media.subtype, rest), 1.0 if weight is None else float(weight)
+    )
 
 
 def _elements(header: str) -> Iterator[tuple[int, str]]:
@@ -76,19 +90,20 @@ def _elements(header: str) -> Iterator[tuple[int, str]]:
     yield start, header[start:]
 
 
-def _raw_names(element: str) -> set[str]:
-    """Parameter names as written, trimmed and lower-cased, even where the value is broken."""
-    names: set[str] = set()
+def _raw_weights(element: str) -> list[bool]:
+    """For each parameter written as ``q`` (trimmed, any case), whether its value is quoted."""
+    found: list[bool] = []
     index, length = element.find(";"), len(element)
     while 0 <= index < length:
         index += 1
         start = index
         while index < length and element[index] not in ";=":
             index += 1
-        names.add(ascii_lower(element[start:index].strip(HTTP_WHITESPACE)))
+        if ascii_lower(element[start:index].strip(HTTP_WHITESPACE)) == "q":
+            found.append(element[index + 1 : index + 2] == '"')
         while index < length and element[index] != ";":
             if element[index] == '"':
                 _, index = collect_quoted(element, index)
             else:
                 index += 1
-    return names
+    return found
