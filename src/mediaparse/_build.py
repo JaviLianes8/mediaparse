@@ -25,7 +25,7 @@ def build(mimetype: str, params: Mapping[str, str] | None = None, *, extended: b
     >>> from mediaparse import build
     >>> build("Text/Plain", {"charset": "utf-8", "title": "a; b"})
     'text/plain; charset=utf-8; title="a; b"'
-    >>> build("text/plain", {"title": "café"}, extended=True)
+    >>> build("text/plain", {"title": "caf\\xe9"}, extended=True)
     "text/plain; title*=UTF-8''caf%C3%A9"
     """
     parts = [essence(mimetype)]

@@ -68,7 +68,7 @@ def test_rfc_8187_examples() -> None:
         unquote(_value(examples[3], "title*").split("'", 2)[2]),
     ]
     assert values == expected
-    assert values[2:] == ["\xa3 rates", "\xa3 and € rates"]
+    assert values[2:] == ["\xa3 rates", "\xa3 and \u20ac rates"]
     for value in values:
         written = build("x/bar", {"title": value}, extended=True)
         assert decode_extended(parse(written, strict=True)[1]) == {"title": value}

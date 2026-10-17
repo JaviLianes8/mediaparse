@@ -16,7 +16,7 @@ from conftest import code_points, sentence, upstream_prose
 from mediaparse import MediaTypeError, parse_media_type
 
 # Every code point up to U+02FF, plus a few far ones: surrogates and astral characters.
-SAMPLE = [chr(code) for code in range(0x300)] + ["\ud800", "\udfff", "￿", "\U0001f600"]
+SAMPLE = [chr(code) for code in range(0x300)] + ["\ud800", "\udfff", "\uffff", "\U0001f600"]
 
 
 @pytest.fixture(scope="module")
