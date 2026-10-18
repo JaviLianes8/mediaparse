@@ -172,7 +172,8 @@ All results are the same, checked on over 50,000 calls against the PyPI release,
 - `AcceptItem` refuses `*/subtype` ranges and a `q` inside the range.
 - In the default mode `parse_accept` skips an element with any `q` not written as
   `q=qvalue`: a quoted `q="0.5"` (0.2.0 read it as a weight) or a malformed `q` after a
-  valid one (`q=0.5;q =1`, where 0.2.0 kept 0.5), as the strict mode refuses both.
+  valid one (`q=0.5;q =1`, where 0.2.0 kept 0.5), as the strict mode refuses both; a
+  quote inside an unquoted value (`x=a"b;q=`) no longer hides a malformed weight.
 - `decode_extended` refuses the `charmap` codec and charset names outside Python's
   standard encodings.
 - Error positions: strict `parse_accept` errors on the weight or a `*/subtype` range

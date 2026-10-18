@@ -39,7 +39,9 @@ signatures, defaults and error types follow Semantic Versioning from this releas
 - `parse_accept` in its default mode skips an element with any `q` not written as
   `q=qvalue`: a quoted `q="0.5"` (which the grammar does not allow; 0.2.0 read it as a
   weight) and a malformed `q` after a valid one (`q=0.5;q =1`; 0.2.0 kept 0.5). The
-  strict mode already refused both.
+  strict mode already refused both. A quote inside an unquoted value no longer hides a
+  weight either: `a/b;x=a"b;q=` (0.2.0: weight 1) and `a/b;x=a"b;q =0.3;q=0.7` (0.2.0:
+  0.7) are skipped.
 - `MediaTypeError.position`: strict `parse_accept` errors on a weight or a `*/subtype`
   range now carry the position in the header, and the message counts positions the same
   way; the default parser points at the offending character instead of the start of the
@@ -48,9 +50,6 @@ signatures, defaults and error types follow Semantic Versioning from this releas
 
 ### Fixed
 
-- `parse_accept`, `quality` and `negotiate` raised a bare `ValueError` in the default
-  mode for an element such as `a/b;x=a"b;q="`, where a quote inside an unquoted value
-  hid the weight from the check; such an element is now skipped.
 - `decode_extended` grew memory without limit when fed new charset names, because
   Python's codec registry remembers every name it fails to find; only names of Python's
   standard encodings, at most 40 characters, are now looked up.
