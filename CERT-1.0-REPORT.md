@@ -12,8 +12,8 @@ Progress:
 - [x] Ground truth: specifications and registries fetched live, reference parsers (item 7)
 - [x] Contract, fuzz and author mutation round (items 6, 9, 18)
 - [x] Docs: README, GUIDE, CHANGELOG (items 11, 12)
-- [ ] Packaging, e2e and upgrade from PyPI 0.2.0, every Python (items 8, 10, 13, 14)
-- [ ] Five QA lenses report PASS (item 19)
+- [x] Packaging, e2e and upgrade from PyPI 0.2.0, every Python (items 8, 10, 13, 14)
+- [x] Five QA lenses report PASS (item 19)
 - [ ] Independent reviewer reports PASS (item 16)
 - [ ] Gates (item 15), final run
 - [ ] PR and trace guard CLEAN (item 17); merge and publish left to the maintainer
@@ -40,11 +40,17 @@ Defects found in 0.2.0 by reading and then reproducing:
 
 ## API review (item 1)
 
-Kept: the twelve public names of 0.2.0 with their signatures and defaults, now pinned by
-`tests/test_contract_api.py`. Changed, all in the CHANGELOG and the GUIDE: `TypeError`
-from `MediaType.get` and `AcceptItem.matches` for arguments of the wrong type;
-`AcceptItem` refuses `*/subtype` and a `q` inside the range; `charmap` refused as a
-charset; bounded messages. Internal: the Accept module split in three (reading, the item,
+Kept: the twelve public names of 0.2.0 with their signatures, parameter names and
+defaults, now pinned by `tests/test_contract_api.py` (the GUIDE promises the parameter
+names too). Changed, all in the CHANGELOG and the GUIDE: `TypeError` from
+`MediaType.get` and `AcceptItem.matches` for arguments of the wrong type; `AcceptItem`
+refuses `*/subtype` and a `q` inside the range, stores a plain float and checks it after
+conversion; `MediaType` stores plain `str` values; `get` overloads; the default Accept
+mode skips an element with any `q` not written as `q=qvalue`; error positions point at
+the offending character in the text being read; `build(extended=True)` keeps names
+unique without case and free of `*`; `decode_extended` accepts only charset names of
+Python's standard encodings (at most 40 characters, no `charmap`); bounded messages;
+linear `AcceptItem.matches`. Internal: the Accept module split in three (reading, the item,
 negotiation) to keep every file under 200 lines with the new examples; the stray
 `annotations` name is gone from the package top.
 
@@ -170,3 +176,26 @@ oracle present) run with `-x` and a 300 s per-test limit. All 50 killed at once.
   3.11.5, 3.12.12, 3.13.2, 3.14.2 and 3.14.2 free-threaded, 417 passed and 3 skipped
   each (the three e2e tests, which need the source tree and run separately). 3.8 and 3.9
   are below `requires-python`.
+
+## QA lenses (item 19)
+
+Independent reviews, one at a time, each reading the certification rules, running the
+code and reporting only to the maintainer. Later rounds confirm the earlier findings and
+sweep at most 40 new mutants on the code changed since the previous round.
+
+| Lens | Round | Head | Verdict | Findings and outcome |
+| --- | --- | --- | --- | --- |
+| a. API and docs | 1 | 4dafb9a | FAIL | GUIDE comparison claims (werkzeug, email, multipart) true only on build output; README said email has no builder and werkzeug is a framework; strict Accept message and position disagreed; several errors without position or pointing at the part start; decode_extended position counted after the prefix; quoted q read as a weight in default mode; get had no overloads; parameter names kept (published in 0.2.0, now promised in the GUIDE); fixed in dc951a0 |
+| a | 2 | dc951a0 | FAIL | all ten confirmed; 40 mutants on the changed code, 4 survivors (q name trimmed with OWS only, second q not checked, non-ASCII position, get overload type); every q must now be well formed, contracts added in 6f1ca5b |
+| a | 3 | 6f1ca5b | FAIL | 4 confirmed killed; 18 new mutants, 3 survivors (whitespace around q name and value), 1 equivalent dead clause removed; two GUIDE lines; fixed in 9c67400 |
+| a | 4 | 9c67400 | PASS | 3 survivors killed, 7 new mutants all killed, GUIDE lines confirmed |
+| b. Correctness and ground truth | 1 | 9c67400 | FAIL (minor) | 13 sources re-fetched (sha256 match); own WHATWG and RFC 9110 references written from the spec text: 400,000 parse inputs, 150,000 Accept headers, 106,610 quality pairs, 43,000 inputs against the Node.js reference, WPT 955/955, 0 mismatches; RFC examples, IANA names and properties pass; rules 10 and 13 hold. Findings: `build(extended=True)` wrote two fields for names equal without case when one value was encoded; a `*` inside a name could be read back as a section; 40 mutants, 1 survivor (us-ascii default of a plain first section), 1 equivalent; an imprecise test comment; fixed in 44efdc4 to d569d74 |
+| b | 2 | d569d74 | PASS | fixes confirmed, property run 0 mismatches, 7 mutants on the changed code all killed |
+| c. Adversarial and robustness | 1 | d569d74 | FAIL | 13.9 million fuzz cases on four seeds, 64 shapes at n/4n/16n, 10 MB and 100k inputs, recursion limit pass, free-threaded 3.14.2t with 4 threads (0 mismatches), 40 mutants all killed. Findings: a bare `ValueError` from default-mode Accept for `a/b;x=a"b;q="` (a quote inside an unquoted value hid the weight); unbounded codec-cache growth from new charset names in `decode_extended`; quadratic `AcceptItem.matches`; an unprintable argument escaping as another exception; `q` subclass and `-0.0`, value subclasses stored as given; fixed in 34c2412 |
+| c | 2 | 34c2412 | FAIL (minor) | all five confirmed (2.89 million new fuzz cases, 300,000 elements against an independent walk of the browser algorithm, codec cache growth 0, matching linear to 100k parameters, 20,792 charset names unchanged); 32 mutants, 1 survivor (a quoted value after a bare name), 7 equivalent; a weak charset test; fixed in 99a83ec |
+| c | 3 | 99a83ec | FAIL (minor) | both survivors killed; 6 mutants on the changed line, 1 survivor (the name check bypassed for short names); short-name contract added in 0440066 |
+| c | 4 | 0440066 | PASS | the last survivor killed by the full suite; no open survivors besides the argued equivalents |
+| d. Packaging and real e2e | 1 | 0440066 | PASS (2 minor) | clean-clone wheel and sdist, `twine check --strict`, contents and metadata, consumer script with `mypy --strict` from the installed wheel, live PyPI 0.2.0 upgraded in place with all nine documented changes confirmed, sdist suite against the install (469 passed with fetched files, 435 passed and 37 clean skips without), every CPython here 3.10.19 to 3.14.2t (469 passed each), 3.8/3.9 refused; minor: a CHANGELOG entry described a crash that never shipped, `release.ps1` refused any upload once the name existed; fixed in a1744aa |
+| d | 2 | a1744aa | PASS | both confirmed against PyPI 0.2.0; release script check run alone in PowerShell 5.1 and 7; rebuilt wheel byte-identical, `twine check --strict`, sdist suite 469 passed |
+| e. Contract strength (blind) | 1 | a1744aa | FAIL | 146 own mutants over all 13 modules, full suite each (fetched sources, werkzeug, multipart, Node.js reference, 0.2.0 oracle): 132 killed, 5 argued equivalent (E1, B2, R2, A3, A17), 9 missing contracts (message cut boundary, vertical tab before the type, CR/LF around a built media type, second hex digit, utf-8 bytes after a plain first section, charset name syntax, which plain duplicate wins, a newline in an encoded value, strict position of an out-of-range weight); contracts added in 689add2, the duplicate rule documented in c3707df |
+| e | 2 | c3707df | PASS | all 9 now killed by `tests/test_contract_edges.py`; 141 of 146 killed, the other 5 equivalent |
