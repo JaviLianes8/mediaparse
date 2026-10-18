@@ -120,7 +120,7 @@ def _standard(charset: str) -> bool:
     if len(charset) > 40:
         return False
     key = encodings.normalize_encoding(charset.lower())
-    return key in _ENCODINGS or key in _ALIASES or key.replace(".", "_") in _ALIASES
+    return key in _ENCODINGS or key in _ALIASES
 
 
 _ENCODINGS = frozenset(module.name for module in pkgutil.iter_modules(encodings.__path__))

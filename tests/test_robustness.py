@@ -24,6 +24,16 @@ def test_a_quote_inside_an_unquoted_value_hides_no_weight(element: str) -> None:
 
 def test_a_quoted_value_still_hides_its_content() -> None:
     assert [item.q for item in parse_accept('a/b;x="q =1;";q=0.5')] == [0.5]
+    assert parse_accept('a/b;x;"a;q =1;"') == []
+
+
+@pytest.mark.parametrize(
+    "charset",
+    ["utf-8", "UTF-8", "us-ascii", "iso-8859-1", "ISO_8859-15", "windows-1252", "shift_jis",
+     "euc-jp", "gb2312", "big5", "koi8-r", "utf-7", "cp437", "latin1", "ascii", "utf8"],
+)  # fmt: skip
+def test_common_charsets_are_accepted(charset: str) -> None:
+    assert decode_extended({"a*": charset + "''%41"}) == {"a": "A"}
 
 
 def test_every_standard_charset_name_decodes_like_python() -> None:
@@ -92,6 +102,9 @@ class _Liar(float):
 
 
 class _Shout(str):
+    def __str__(self) -> str:
+        return "other"
+
     def __eq__(self, other: object) -> bool:
         return True
 
@@ -105,5 +118,5 @@ def test_values_are_stored_as_plain_builtins() -> None:
     zero = AcceptItem(MediaType("a", "b"), -0.0).q
     assert str(zero) == "0.0" and type(zero) is float
     media = MediaType("a", "b", (("x", _Shout("v")),))
-    assert type(media.params[0][1]) is str
+    assert type(media.params[0][1]) is str and media.params[0][1] == "v"
     assert media != MediaType("a", "b", (("x", "w"),))
