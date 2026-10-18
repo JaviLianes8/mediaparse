@@ -179,3 +179,7 @@ def test_doctests_of_the_public_classes_are_found_at_the_package_top() -> None:
     names = {test.name.removeprefix("mediaparse.") for test in found}
     assert {"MediaType.get", "MediaType.essence", "AcceptItem.matches"} <= names
     assert {"MediaTypeError", "AcceptItem.specificity", "MediaType.suffix"} <= names
+
+
+def test_the_package_keeps_no_helper_names_from_its_setup() -> None:
+    assert not {"_cls", "_member"} & set(vars(mediaparse))

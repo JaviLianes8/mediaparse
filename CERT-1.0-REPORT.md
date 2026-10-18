@@ -14,9 +14,33 @@ Progress:
 - [x] Docs: README, GUIDE, CHANGELOG (items 11, 12)
 - [x] Packaging, e2e and upgrade from PyPI 0.2.0, every Python (items 8, 10, 13, 14)
 - [x] Five QA lenses report PASS (item 19)
-- [ ] Independent reviewer reports PASS (item 16)
-- [ ] Gates (item 15), final run
+- [x] Independent reviewer reports PASS (item 16)
+- [x] Gates (item 15), final run
 - [ ] PR and trace guard CLEAN (item 17); merge and publish left to the maintainer
+
+## Scorecard
+
+| # | Item | Result |
+| --- | --- | --- |
+| 1 | Public API reviewed for stability | PASS: 12 names, signatures and parameter names kept from 0.2.0 and pinned; every behaviour change in CHANGELOG and GUIDE |
+| 2 | `__all__` exact, no private imports in docs | PASS |
+| 3 | Docstrings with runnable examples, doctests | PASS: 18 doctests; README (15 outputs) and GUIDE (8) examples run as tests |
+| 4 | Typed end to end | PASS: `mypy --strict src tests`, `py.typed`, `get` overloads, typing checked from a consumer |
+| 5 | Typed, documented, bounded errors | PASS: `MediaTypeError` (a `ValueError`) with positions, `TypeError` for wrong types, messages quote at most 80 characters |
+| 6 | Contract tests of every public name | PASS |
+| 7 | Real ground truth | PASS: 13 fetched sources with a hash manifest, IANA registries, WPT, the Node.js reference, werkzeug, multipart, `email`, PyPI 0.2.0 |
+| 8 | Real e2e from the wheel | PASS: installed wheel driven from an empty folder, upgrade in place from PyPI 0.2.0 (no CLI) |
+| 9 | Seeded fuzz, no crash, hang or blowup | PASS |
+| 10 | Supported Pythons | PASS: CPython 3.10.19, 3.11.5, 3.12.12, 3.13.2, 3.14.2, 3.14.2t; 3.13t not installed here |
+| 11 | README and `twine check` | PASS |
+| 12 | Dated CHANGELOG section | PASS: 1.0.0, 2026-10-18 |
+| 13 | pyproject 1.0.0, Production/Stable | PASS |
+| 14 | sdist and wheel contents | PASS |
+| 15 | Gates each exit 0 | PASS: see Gates |
+| 16 | Independent reviewer | PASS (two rounds) |
+| 17 | PR and trace guard | see the PR; merge and publish left to the maintainer |
+| 18 | Contracts bite (mutations) | PASS: author 50, lens a 67, b 47, c 78, e 146, reviewer 32 (9 of them author mutants re-run); every non-equivalent survivor killed by a contract |
+| 19 | Five independent QA lenses | PASS: a round 4, b round 2, c round 4, d round 2, e round 2 |
 
 ## Baseline on 0.2.0 (before any change)
 
@@ -148,3 +172,19 @@ sweep at most 40 new mutants on the code changed since the previous round.
 | d | 2 | a1744aa | PASS | both confirmed against PyPI 0.2.0; release script check run alone in PowerShell 5.1 and 7; rebuilt wheel byte-identical, `twine check --strict`, sdist suite 469 passed |
 | e. Contract strength (blind) | 1 | a1744aa | FAIL | 146 own mutants over all 13 modules, full suite each (fetched sources, werkzeug, multipart, Node.js reference, 0.2.0 oracle): 132 killed, 5 argued equivalent (E1, B2, R2, A3, A17), 9 missing contracts (message cut boundary, vertical tab before the type, CR/LF around a built media type, second hex digit, utf-8 bytes after a plain first section, charset name syntax, which plain duplicate wins, a newline in an encoded value, strict position of an out-of-range weight); contracts added in 689add2, the duplicate rule documented in c3707df |
 | e | 2 | c3707df | PASS | all 9 now killed by `tests/test_contract_edges.py`; 141 of 146 killed, the other 5 equivalent |
+
+## Independent review (item 16)
+
+| Round | Head | Verdict | Findings and outcome |
+| --- | --- | --- | --- |
+| 1 | fa87e41 | PASS (minor) | 18 items PASS, 17 pending; 9 author mutants re-run and killed; tampered fetched files make the tests fail; minor: report over 200 lines, an `email` wording, public classes reporting private modules (pickles depending on them), the CHANGELOG date, the release script building from a dirty tree; fixed in 0a8358e and 4e23a0f |
+| 2 | 4e23a0f | PASS | all five confirmed; 15 mutants on the changed code, 13 killed, 2 harmless (one pinned in a later test) |
+
+## Gates (item 15)
+
+At 0a8358e on the laptop from a fresh clone, each command on its own, with the fetched
+sources, werkzeug, multipart, the 0.2.0 oracle, `MEDIAPARSE_E2E=1` and
+`MEDIAPARSE_E2E_PYPI=1`: `ruff format --check .`, `ruff check .`, `mypy --strict src`,
+`mypy --strict src tests` and `pytest` (512 passed, 4 skipped: the Node.js reference,
+not installed there) all exit 0. The reviewer repeated them at 4e23a0f (exit 0). On this
+PC with the Node.js reference present the suite has no skips besides the opt-in e2e tests.
