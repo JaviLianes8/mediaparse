@@ -122,7 +122,8 @@ the range, and a weight outside 0 to 1 or NaN.
 `decode_extended(params)` joins `name*0`, `name*1`, ... sections (starting at 0, no gaps,
 no leading zeros), decodes `charset'language'percent-encoded` values and drops the
 language. Encoded and plain sections may mix and a character may span sections. When
-both `name` and an extended form are present the extended form wins. The charset must
+both `name` and an extended form are present the extended form wins; of plain names
+equal without case the last value wins. The charset must
 be one of Python's standard encodings (a name of at most 40 characters) that decodes
 text; codecs that are not character sets (escape decoders, `mbcs`, `oem`, `charmap`,
 `idna`, `punycode`) are refused.

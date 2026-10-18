@@ -29,8 +29,9 @@ def decode_extended(params: Mapping[str, str]) -> dict[str, str]:
 
     ``title*0*=us-ascii'en'This%20is``, ``title*1=" fun"`` become ``title="This is fun"``.
     Names are compared in ASCII lower case and results keep the order in which each name
-    first appears. When both ``name`` and an extended form are present the extended form
-    wins, as it is the one that carries the real value. The language tag is dropped.
+    first appears; of plain names equal without case the last value wins. When both
+    ``name`` and an extended form are present the extended form wins, as it is the one
+    that carries the real value. The language tag is dropped.
     Gaps or leading zeros in the sections, a section given twice, a bad percent escape, a
     charset that is not a character set Python can decode, and bytes it cannot decode
     raise :class:`MediaTypeError`; a name or value that is not a ``str`` raises :class:`TypeError`.
