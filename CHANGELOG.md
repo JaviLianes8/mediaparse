@@ -6,7 +6,79 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.2.0]
+## [1.0.0] - 2026-10-18
+
+The public API is now stable: the twelve names in `mediaparse.__all__`, their
+signatures, defaults and error types follow Semantic Versioning from this release on.
+
+### Stable
+
+- Parsing: `parse` and `parse_media_type` read like browsers by default (the WHATWG
+  MIME Sniffing algorithm) and exactly by the RFC 9110 grammar with `strict=True`;
+  `MediaType` is the frozen value they return.
+- Building: `build` never writes a value that could split or corrupt the header, and
+  writes non-ASCII values as RFC 8187 / RFC 2231 extended values on request.
+- Comparing: `normalize` and `matches`.
+- Accept: `parse_accept`, `AcceptItem`, `quality` and `negotiate`.
+- RFC 2231: `decode_extended`.
+- Errors: `MediaTypeError` (a `ValueError`) for invalid text, with `position` when it
+  comes from parsing; `TypeError` for arguments of the wrong type.
+
+### Changed
+
+- `MediaType.get` raises `TypeError` for a name that is not a `str` (it raised
+  `AttributeError`).
+- `AcceptItem.matches` raises `TypeError` for an argument that is not a `MediaType` (it
+  raised `AttributeError`).
+- `AcceptItem` refuses a `*/subtype` range and a `q` parameter inside the range with
+  `MediaTypeError`; both were accepted when built by hand, though no parser produced them.
+- `decode_extended` refuses the `charmap` codec as a charset, like the other Python
+  codecs that are not character sets, and accepts only charset names of Python's standard
+  `encodings` package (at most 40 characters); a codec registered by another package is
+  no longer looked up.
+- `parse_accept` in its default mode skips an element with any `q` not written as
+  `q=qvalue`: a quoted `q="0.5"` (which the grammar does not allow; 0.2.0 read it as a
+  weight) and a malformed `q` after a valid one (`q=0.5;q =1`; 0.2.0 kept 0.5). The
+  strict mode already refused both. A quote inside an unquoted value no longer hides a
+  weight either: `a/b;x=a"b;q=` (0.2.0: weight 1) and `a/b;x=a"b;q =0.3;q=0.7` (0.2.0:
+  0.7) are skipped.
+- `MediaTypeError.position`: strict `parse_accept` errors on a weight or a `*/subtype`
+  range now carry the position in the header, and the message counts positions the same
+  way; the default parser points at the offending character instead of the start of the
+  type or subtype; `decode_extended` counts from the start of the parameter value.
+- `MediaType.get` has overloads, so `get(name, "default")` is typed `str`.
+- `MediaType`, `AcceptItem` and `MediaTypeError` show and pickle as `mediaparse.<Name>`
+  instead of the private module that defines them; pickles made by 0.2.0 still load.
+
+### Fixed
+
+- `decode_extended` grew memory without limit when fed new charset names, because
+  Python's codec registry remembers every name it fails to find; only names of Python's
+  standard encodings, at most 40 characters, are now looked up.
+- `AcceptItem.matches`, and so `quality`, took time proportional to the product of the
+  range and offer parameter counts; it is now linear.
+- An argument whose `repr` fails or recurses too deep no longer turns a `TypeError` into
+  another exception; `AcceptItem` stores `q` as a plain float (never `-0.0`) and checks
+  the converted value; `MediaType` stores parameter values as plain `str`.
+- `build(..., extended=True)` wrote two fields for names equal without case when one
+  value needed encoding (`{"T": "\x7f", "t": "x"}`), losing one on decode; it now raises
+  as it does without `extended`. It also refuses a `*` anywhere in a name (only a final
+  `*` was refused), so `title*0` can no longer be read back as a section of `title`.
+- Error messages stay short for any input: a huge value that could not be encoded by
+  `build(..., extended=True)` and a huge `*/subtype` element in a strict Accept header
+  were quoted whole, and an `AcceptItem` weight too large to print raised `ValueError`
+  instead of `MediaTypeError`.
+
+### Added
+
+- Runnable examples in every public docstring, run as doctests, and a GUIDE.
+- Tests against the specifications fetched at test time (RFC 9110, RFC 6838, RFC 2045,
+  RFC 2231, RFC 8187, the WHATWG MIME Sniffing and Fetch standards, the IANA media type
+  and structured suffix registries) and against independent parsers (Python's `email`
+  package, `werkzeug`, `multipart` and the `whatwg-mimetype` reference implementation),
+  plus seeded fuzz and hostile input tests.
+
+## [0.2.0] - 2026-10-16
 
 ### Added
 
@@ -40,7 +112,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.1.0]
 
-- First release.
+- First version (not published to PyPI).
 - `parse` splits a Content-Type style header into a media type and its
   parameters, unescaping quoted values and tolerating malformed input.
 - `build` renders a media type and parameters back, quoting only the values that

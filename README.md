@@ -1,5 +1,7 @@
 # mediaparse
 
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
 Parse and build HTTP media types, `Content-Type` and `Accept` headers, exactly.
 
 ## Install
@@ -122,54 +124,38 @@ print(decode_extended(parse(header)[1]))
 
 ## Rules it follows
 
-- **Default parsing** is the WHATWG MIME Sniffing "parse a MIME type" algorithm, checked
-  against the web-platform-tests MIME type corpus. Whitespace (tab, LF, CR, space) is
-  trimmed, a parameter whose name is not a token or whose value has a character above
-  U+00FF or a control character is skipped, empty values are skipped and the first
-  duplicate wins. `str(MediaType)` is the WHATWG serialization.
-- **Strict parsing** is the RFC 9110 `media-type` grammar: no whitespace around `=`,
-  values are tokens or quoted strings with `qdtext` and `quoted-pair` only, and a repeated
-  parameter is an error (RFC 6838 section 4.3). Leading and trailing spaces or tabs are
-  allowed because a field parser removes them.
-- **Names** are lower-cased in ASCII only, so a character such as the Kelvin sign never
-  turns into a token. Values keep their case; `normalize` and `quality` treat `charset`
-  as case insensitive.
-- **Building** never writes a control character or a non-ASCII character into the
-  header: by default such a value raises, and with `extended=True` it is percent-encoded
-  as `name*=UTF-8''...` (names may not end in `*` then). Two parameters that would be
-  written under one name raise. The output is always one valid header field value.
-- **Accept**: elements split on commas outside quoted strings, empty elements are
-  ignored, `q` must match the `qvalue` grammar (up to three decimals, at most 1) and may
-  appear anywhere among the parameters. In the default mode an invalid element is
-  skipped, including one whose `q` is malformed (`q =0`, `q=`), so a broken weight never
-  counts as 1. In strict mode only spaces and tabs may surround an element. A missing field (`None`) accepts everything; an empty one accepts nothing; a
-  weight of 0 means not acceptable. On equally specific ranges the earliest one counts.
-- **RFC 2231**: sections start at 0 without gaps or leading zeros, encoded and plain
-  sections may mix, a character may span sections, and `name*` wins over `name`. The
-  language tag is dropped. Names compare in ASCII lower case. The charset must be a
-  charset name Python can decode as text; escape decoders, host code pages (`mbcs`,
-  `oem`), `idna` and `punycode` are refused.
+The default mode is the WHATWG MIME Sniffing algorithm, what browsers do; `strict=True`
+is the RFC 9110 grammar exactly. Building never writes a character that could split the
+header. The [GUIDE](https://github.com/JaviLianes8/mediaparse/blob/main/GUIDE.md) has
+every rule in detail, and the
+[CHANGELOG](https://github.com/JaviLianes8/mediaparse/blob/main/CHANGELOG.md) what changed
+in each release.
 
 ## Why
 
 Python 3.13 removed `cgi.parse_header` along with the rest of the `cgi` module. The
-documented replacement, the `email.message.Message` machinery, is parse-oriented with no
-clean builder and mishandles repeated parameters, so projects keep copying a parser by
-hand. `multipart.parse_options_header` is scoped to form data and parse-only, and
-`ietfparse` is a broad multi-RFC toolkit. `mediaparse` is a small, typed,
-zero-dependency library that parses the way browsers do, validates the way the RFC says,
-builds headers that cannot be split, and negotiates `Accept`.
+`email.message.Message` machinery that replaces it is built for mail: it reads a quoted
+value ending in an escaped backslash (`x="a\\"`) past its closing quote, and its
+`set_param` on its default policy stores a CR LF from a value in the header.
+`multipart.parse_options_header` drops parameters whose names hold characters other than
+letters, digits, `-` and `_`, and `werkzeug` is a whole WSGI application library.
+`mediaparse` is a small, typed, zero-dependency library that parses the way browsers do,
+validates the way the RFC says, builds headers that cannot be split, and negotiates
+`Accept`. It is tested against the specifications themselves, the IANA registry and those
+parsers.
 
 ## Development
 
-`python scripts/fetch_upstream.py` downloads the web-platform-tests MIME type files listed
-in `tests/upstream/MANIFEST.json` (they are not part of the repository; their tests skip
-without them). `scripts/check.ps1` runs format, lint, types and tests. Set
-`MEDIAPARSE_E2E=1` to also build the wheel and test the installed package.
+`python scripts/fetch_upstream.py` downloads the specifications, registries and
+web-platform-tests files listed in `tests/upstream/MANIFEST.json` (they are not part of
+the repository; their tests skip without them). `pip install werkzeug multipart` and
+`npm install --prefix tests/upstream whatwg-mimetype@5.0.0` add the reference parsers.
+`scripts/check.ps1` runs format, lint, types and tests. Set `MEDIAPARSE_E2E=1` to also
+build the wheel and test the installed package.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/JaviLianes8/mediaparse/blob/main/LICENSE).
 
 ## Links
 

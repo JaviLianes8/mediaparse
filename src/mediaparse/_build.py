@@ -17,8 +17,16 @@ def build(mimetype: str, params: Mapping[str, str] | None = None, *, extended: b
     raises :class:`MediaTypeError`: control characters (other than tab) would split or
     corrupt the header, and characters outside ASCII have no agreed byte form. With
     ``extended=True`` such a value is written instead as ``name*=UTF-8''...``, the
-    percent-encoded form of RFC 8187 and RFC 2231, and names may not end in ``*``. Two
+    percent-encoded form of RFC 8187 and RFC 2231, and names may not hold ``*``. Two
     parameters that would be written under the same name raise :class:`MediaTypeError`.
+    Spaces and tabs around the media type and the names are dropped. A part of the wrong
+    type raises :class:`TypeError`.
+
+    >>> from mediaparse import build
+    >>> build("Text/Plain", {"charset": "utf-8", "title": "a; b"})
+    'text/plain; charset=utf-8; title="a; b"'
+    >>> build("text/plain", {"title": "caf\\xe9"}, extended=True)
+    "text/plain; title*=UTF-8''caf%C3%A9"
     """
     parts = [essence(mimetype)]
     if params is not None and not isinstance(params, Mapping):
@@ -28,21 +36,20 @@ def build(mimetype: str, params: Mapping[str, str] | None = None, *, extended: b
         key = _name(name)
         if not isinstance(value, str):
             raise TypeError(f"parameter {show(key)} must be a str, got {type(value).__name__}")
-        if extended and key.endswith("*"):
-            raise MediaTypeError(f"parameter {show(key)} ends in '*'; extended=True adds it")
+        if extended and "*" in key:
+            raise MediaTypeError(f"parameter {show(key)} holds '*', which extended=True reserves")
+        if key in seen:
+            raise MediaTypeError(f"parameter {show(key)} is given more than once")
+        seen.add(key)
         if value.isascii() and all(map(is_quotable, value)):
             field = f"{key}={quote(value)}"
         elif extended:
-            key += "*"
-            field = f"{key}={encode_extended(value)}"
+            field = f"{key}*={encode_extended(value)}"
         else:
             raise MediaTypeError(
                 f"parameter {show(key)} holds a control or non-ASCII character; "
                 "pass extended=True to percent-encode it"
             )
-        if key in seen:
-            raise MediaTypeError(f"parameter {show(key)} is given more than once")
-        seen.add(key)
         parts.append(field)
     return "; ".join(parts)
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from mediaparse import (
@@ -130,3 +132,45 @@ def test_wrong_container_types_raise_type_error() -> None:
 
 def test_quality_of_a_malformed_weight_is_zero() -> None:
     assert quality("text/html;q=, */*;q=0.2", "text/html") == 0.2
+
+
+@pytest.mark.parametrize(
+    ("call", "position"),
+    [
+        (lambda: parse("te(t/html"), 2),
+        (lambda: parse(" a/b c"), 4),
+        (lambda: parse("/x"), 0),
+        (lambda: parse("\ta/"), 3),
+        (lambda: decode_extended({"a*": "utf-8''ab%zz"}), 9),
+        (lambda: decode_extended({"a*0*": "utf-8''a", "a*1*": "%z"}), 0),
+    ],
+)
+def test_positions_point_at_the_offending_character(call: Any, position: int) -> None:
+    with pytest.raises(MediaTypeError) as caught:
+        call()
+    assert caught.value.position == position
+
+
+@pytest.mark.parametrize(
+    "element",
+    ["a/b;\nq =0", "a/b;\rQ =0", 'a/b;q=0.5;q="1"', "a/b;q=0.5;q =1", "a/b;q=0.5;q=2", "a/b;q"],
+)
+def test_every_q_of_an_element_must_be_well_formed(element: str) -> None:
+    assert parse_accept(element + ", c/d") == parse_accept("c/d")
+
+
+def test_a_repeated_well_formed_q_keeps_the_first() -> None:
+    assert [item.q for item in parse_accept("a/b;q=0.5;Q=0.7")] == [0.5]
+
+
+def test_a_non_ascii_character_position_counts_from_the_value_start() -> None:
+    with pytest.raises(MediaTypeError) as caught:
+        decode_extended({"a*": "utf-8''a\xe9"})
+    assert caught.value.position == 8
+
+
+def test_whitespace_after_a_valid_weight_is_fine_and_inside_the_name_is_not() -> None:
+    for header in ("a/b;q=0.5 , c/d", "a/b;q=0.5\n, c/d", "a/b;q=0.5\t\r, c/d"):
+        assert [item.q for item in parse_accept(header)] == [0.5, 1.0], header
+    for header in ("a/b;q\n=0, c/d", "a/b;q\r=0, c/d", "a/b;q =0, c/d"):
+        assert parse_accept(header) == parse_accept("c/d"), header

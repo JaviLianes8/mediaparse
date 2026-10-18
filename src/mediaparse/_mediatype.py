@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import overload
 
 from ._errors import MediaTypeError, show
 from ._tokens import ascii_lower, is_quotable, is_token, quote
@@ -18,6 +19,13 @@ class MediaType:
     form browsers expose, for example ``text/html;charset=utf-8``. Equality compares the
     parameters in order; use :func:`matches` to ignore order and ``charset`` case. A part
     of the wrong type raises :class:`TypeError`, an invalid one :class:`MediaTypeError`.
+
+    >>> from mediaparse import MediaType
+    >>> media = MediaType("Text", "HTML", (("Charset", "UTF-8"), ("title", "a b")))
+    >>> media.type, media.subtype, media.params
+    ('text', 'html', (('charset', 'UTF-8'), ('title', 'a b')))
+    >>> print(media)
+    text/html;charset=UTF-8;title="a b"
     """
 
     type: str
@@ -48,27 +56,62 @@ class MediaType:
             raise MediaTypeError("a parameter is given more than once")
         object.__setattr__(self, "type", ascii_lower(self.type))
         object.__setattr__(self, "subtype", ascii_lower(self.subtype))
-        lowered = tuple((name, value) for name, (_, value) in zip(names, pairs, strict=True))
+        # Values are stored as plain str, so a subclass cannot change equality or hashing.
+        lowered = tuple(
+            (name, str.__str__(value)) for name, (_, value) in zip(names, pairs, strict=True)
+        )
         object.__setattr__(self, "params", lowered)
 
     @property
     def essence(self) -> str:
-        """``type/subtype`` without parameters."""
+        """``type/subtype`` without parameters.
+
+        >>> from mediaparse import parse_media_type
+        >>> parse_media_type("Text/HTML; charset=utf-8").essence
+        'text/html'
+        """
         return f"{self.type}/{self.subtype}"
 
     @property
     def suffix(self) -> str | None:
-        """The structured syntax suffix of RFC 6838 section 4.2.8 (``json`` for ``+json``)."""
+        """The structured syntax suffix of RFC 6838 section 4.2.8 (``json`` for ``+json``).
+
+        >>> from mediaparse import parse_media_type
+        >>> parse_media_type("application/vnd.api+json").suffix
+        'json'
+        >>> parse_media_type("application/json").suffix is None
+        True
+        """
         _, plus, tail = self.subtype.rpartition("+")
         return tail if plus and tail else None
 
     @property
     def parameters(self) -> dict[str, str]:
-        """The parameters as a new ordered dict."""
+        """The parameters as a new ordered dict.
+
+        >>> from mediaparse import parse_media_type
+        >>> parse_media_type("text/plain; b=2; a=1").parameters
+        {'b': '2', 'a': '1'}
+        """
         return dict(self.params)
 
+    @overload
+    def get(self, name: str) -> str | None: ...
+    @overload
+    def get(self, name: str, default: str) -> str: ...
+    @overload
+    def get(self, name: str, default: None) -> str | None: ...
     def get(self, name: str, default: str | None = None) -> str | None:
-        """Return a parameter value by case-insensitive name, or ``default``."""
+        """Return a parameter value by case-insensitive name, or ``default``.
+
+        A name that is not a ``str`` raises :class:`TypeError`.
+
+        >>> from mediaparse import parse_media_type
+        >>> media = parse_media_type("text/plain; charset=utf-8")
+        >>> media.get("CHARSET"), media.get("format"), media.get("format", "fixed")
+        ('utf-8', None, 'fixed')
+        """
+        _require_str("name", name)
         wanted = ascii_lower(name)
         for key, value in self.params:
             if key == wanted:

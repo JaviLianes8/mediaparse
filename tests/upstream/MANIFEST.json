@@ -16,5 +16,104 @@
     "fetched": "2026-10-13",
     "size": 61493,
     "sha256": "20924495060ac9633f10d57a326b95a5987863f27c5d4765b13b744304b33fed"
+  },
+  "rfc9110.txt": {
+    "title": "RFC 9110, HTTP Semantics",
+    "url": "https://www.rfc-editor.org/rfc/rfc9110.txt",
+    "revision": "published RFC (immutable)",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 502941,
+    "sha256": "21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a"
+  },
+  "rfc9110-erratum-7138.html": {
+    "title": "RFC 9110 erratum 7138 (verified)",
+    "url": "https://www.rfc-editor.org/errata/eid7138",
+    "revision": "errata page as fetched",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 9975,
+    "sha256": "415f4d720dbd5f475405361969b899d4d864f7b0ff4bcd0c6f6e688d66f8c940"
+  },
+  "rfc6838.txt": {
+    "title": "RFC 6838, Media Type Specifications and Registration Procedures",
+    "url": "https://www.rfc-editor.org/rfc/rfc6838.txt",
+    "revision": "published RFC (immutable)",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 72942,
+    "sha256": "b08ccba7e5116e61085f2e1fe447d90eee785fb0efaa448a4b4ef6ea48b03b80"
+  },
+  "rfc2045.txt": {
+    "title": "RFC 2045, MIME Part One",
+    "url": "https://www.rfc-editor.org/rfc/rfc2045.txt",
+    "revision": "published RFC (immutable)",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 72932,
+    "sha256": "9bb251635dd37fda97dcce6c08dea019432117a0f1e389051d2ecbf7b76350b0"
+  },
+  "rfc2231.txt": {
+    "title": "RFC 2231, MIME Parameter Value and Encoded Word Extensions",
+    "url": "https://www.rfc-editor.org/rfc/rfc2231.txt",
+    "revision": "published RFC (immutable)",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 19280,
+    "sha256": "e69cbc8c05097736c5296575e7a2e0cb2a2a09c522640eb40ecc4a9dca56076d"
+  },
+  "rfc2231-erratum-590.html": {
+    "title": "RFC 2231 erratum 590 (verified)",
+    "url": "https://www.rfc-editor.org/errata/eid590",
+    "revision": "errata page as fetched",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 7129,
+    "sha256": "24fdc6c24080a2e745e1522d7a6dae8157b9c8fb7fc8896517382a00917ee961"
+  },
+  "rfc8187.txt": {
+    "title": "RFC 8187, Indicating Character Encoding and Language for HTTP Header Field Parameters",
+    "url": "https://www.rfc-editor.org/rfc/rfc8187.txt",
+    "revision": "published RFC (immutable)",
+    "licence": "IETF Trust Legal Provisions, https://trustee.ietf.org/license-info",
+    "fetched": "2026-10-17",
+    "size": 28118,
+    "sha256": "af50e65257dc16a27fa85e25ef68d49c8fa2a4abc21094a00469462c8cb89b53"
+  },
+  "whatwg-mimesniff.html": {
+    "title": "WHATWG MIME Sniffing Standard",
+    "url": "https://mimesniff.spec.whatwg.org/commit-snapshots/39aa53511b13953d84fef8d4131d6f61d0ccbde6/",
+    "revision": "commit 39aa53511b13953d84fef8d4131d6f61d0ccbde6",
+    "licence": "CC BY 4.0, https://creativecommons.org/licenses/by/4.0/",
+    "fetched": "2026-10-17",
+    "size": 246659,
+    "sha256": "11caac49505995bcef51153a827c6fe96464111c8914e2c399d9e8fe9a467cd7"
+  },
+  "whatwg-fetch.html": {
+    "title": "WHATWG Fetch Standard",
+    "url": "https://fetch.spec.whatwg.org/commit-snapshots/e9460d1b22ead1c6a72eeac37fb2ec0dc01aeb1d/",
+    "revision": "commit e9460d1b22ead1c6a72eeac37fb2ec0dc01aeb1d",
+    "licence": "CC BY 4.0, https://creativecommons.org/licenses/by/4.0/",
+    "fetched": "2026-10-17",
+    "size": 1932351,
+    "sha256": "639d437c000a870bf161804a92f9e0ce1b22dae61f39d8975a7b8429302534eb"
+  },
+  "iana-media-types.xml": {
+    "title": "IANA Media Types registry",
+    "url": "https://www.iana.org/assignments/media-types/media-types.xml",
+    "revision": "living registry as fetched",
+    "licence": "CC0 1.0 (IANA and IETF), https://www.iana.org/help/licensing-terms",
+    "fetched": "2026-10-17",
+    "size": 612637,
+    "sha256": "ea860f979d3b8ea00a141ef6e2e80aa8747e2406a7ffbea5e492558a1d4c97cb"
+  },
+  "iana-structured-suffix.xml": {
+    "title": "IANA Structured Syntax Suffixes registry",
+    "url": "https://www.iana.org/assignments/media-type-structured-suffix/media-type-structured-suffix.xml",
+    "revision": "living registry as fetched",
+    "licence": "CC0 1.0 (IANA and IETF), https://www.iana.org/help/licensing-terms",
+    "fetched": "2026-10-17",
+    "size": 42253,
+    "sha256": "8f9e37b1e490318b370df30a7a9b457ef675c23c53a18fdc98f1e5afda73339f"
   }
 }

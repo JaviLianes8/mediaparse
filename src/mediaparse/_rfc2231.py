@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import codecs
+import encodings
+import encodings.aliases
+import pkgutil
 import re
 from collections.abc import Mapping
 
@@ -18,7 +21,7 @@ _INITIAL = re.compile(r"(?P<charset>[^']*)'(?P<language>[^']*)'(?P<rest>.*)", re
 _CHARSET = re.compile(r"[A-Za-z0-9!#$%&+\-^_`{}~]+")
 # Python text codecs that are not character sets: escape decoders, host code pages and
 # transforms. A header must not decide to run them.
-_NOT_CHARSETS = frozenset({"mbcs", "oem", "idna", "punycode", "undefined"})
+_NOT_CHARSETS = frozenset({"mbcs", "oem", "idna", "punycode", "undefined", "charmap"})
 
 
 def decode_extended(params: Mapping[str, str]) -> dict[str, str]:
@@ -26,11 +29,16 @@ def decode_extended(params: Mapping[str, str]) -> dict[str, str]:
 
     ``title*0*=us-ascii'en'This%20is``, ``title*1=" fun"`` become ``title="This is fun"``.
     Names are compared in ASCII lower case and results keep the order in which each name
-    first appears. When both ``name`` and an extended form are present the extended form
-    wins, as it is the one that carries the real value. The language tag is dropped.
+    first appears; of plain names equal without case the last value wins. When both
+    ``name`` and an extended form are present the extended form wins, as it is the one
+    that carries the real value. The language tag is dropped.
     Gaps or leading zeros in the sections, a section given twice, a bad percent escape, a
     charset that is not a character set Python can decode, and bytes it cannot decode
-    raise :class:`MediaTypeError`.
+    raise :class:`MediaTypeError`; a name or value that is not a ``str`` raises :class:`TypeError`.
+
+    >>> from mediaparse import decode_extended
+    >>> decode_extended({"title*0*": "us-ascii'en'This%20is", "title*1": " fun", "a": "1"})
+    {'title': 'This is fun', 'a': '1'}
     """
     if not isinstance(params, Mapping):
         raise TypeError(f"params must be a mapping, got {type(params).__name__}")
@@ -70,14 +78,16 @@ def _join(attr: str, slot: dict[int, tuple[bool, str]]) -> str:
     data = bytearray()
     for index in range(len(slot)):
         encoded, value = slot[index]
+        base = 0
         if encoded and index == 0:
             initial = _INITIAL.fullmatch(value)
             if initial is None:
                 raise MediaTypeError(f"parameter {label} lacks the charset'language' prefix")
             charset = initial["charset"] or "us-ascii"
+            base = len(value) - len(initial["rest"])
             value = initial["rest"]
         if encoded:
-            data += percent_decode(value)
+            data += percent_decode(value, base)
         elif value.isascii():
             data += value.encode("ascii")
         else:
@@ -88,6 +98,9 @@ def _join(attr: str, slot: dict[int, tuple[bool, str]]) -> str:
 def _decode(data: bytes, charset: str, label: str) -> str:
     if _CHARSET.fullmatch(charset) is None:
         raise MediaTypeError(f"invalid charset name {show(charset)}")
+    if not _standard(charset):
+        # codecs.lookup remembers every name it fails to find; never feed it unknown ones.
+        raise MediaTypeError(f"unknown charset {show(charset)}")
     try:
         name = codecs.lookup(charset).name
     except LookupError as error:
@@ -100,3 +113,16 @@ def _decode(data: bytes, charset: str, label: str) -> str:
         raise MediaTypeError(f"{show(charset)} is not a text encoding") from error
     except (UnicodeError, ValueError) as error:
         raise MediaTypeError(f"parameter {label} is not valid {show(charset)}") from error
+
+
+def _standard(charset: str) -> bool:
+    """Whether Python's standard ``encodings`` package knows the name (at most 40 chars,
+    the longest a registered charset name may be)."""
+    if len(charset) > 40:
+        return False
+    key = encodings.normalize_encoding(charset.lower())
+    return key in _ENCODINGS or key in _ALIASES
+
+
+_ENCODINGS = frozenset(module.name for module in pkgutil.iter_modules(encodings.__path__))
+_ALIASES = frozenset(encodings.aliases.aliases)

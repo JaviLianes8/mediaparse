@@ -103,21 +103,33 @@ def test_invalid_ranges_skip_or_raise(element: str) -> None:
         parse_accept(f"{element}, text/plain", strict=True)
 
 
-def test_strict_mode_rejects_a_quoted_weight_and_whitespace_around_equals() -> None:
-    assert parse_accept('text/html;q="0.5"')[0].q == 0.5
-    with pytest.raises(MediaTypeError):
-        parse_accept('text/html;q="0.5"', strict=True)
+def test_a_quoted_weight_is_malformed_in_both_modes() -> None:
+    assert parse_accept('text/html;q="0.5", a/b') == parse_accept("a/b")
+    assert parse_accept('text/html;Q="1";q=0.5, a/b') == parse_accept("a/b")
+    with pytest.raises(MediaTypeError) as caught:
+        parse_accept('a/b, text/html;q="0.5"', strict=True)
+    assert caught.value.position == 17
     with pytest.raises(MediaTypeError):
         parse_accept("text/html; q = 0.5", strict=True)
 
 
-def test_strict_errors_point_into_the_whole_header() -> None:
+@pytest.mark.parametrize(
+    ("header", "position", "message"),
+    [
+        ("text/html, image/png;q=7", 23, "q='7'"),
+        ("text/html, ima ge/png", 14, "at position 14"),
+        ("a/b, c/d; =1", 10, "at position 10"),
+        ("a/b,  */html", 6, "'*/html'"),
+        ("a/b, c/d;x=1;X=2", 13, "more than once"),
+    ],
+)
+def test_strict_errors_point_into_the_whole_header(
+    header: str, position: int, message: str
+) -> None:
     with pytest.raises(MediaTypeError) as caught:
-        parse_accept("text/html, image/png;q=7", strict=True)
-    assert caught.value.position is None
-    with pytest.raises(MediaTypeError) as caught:
-        parse_accept("text/html, ima ge/png", strict=True)
-    assert caught.value.position == 14
+        parse_accept(header, strict=True)
+    assert caught.value.position == position
+    assert message in str(caught.value)
 
 
 def test_a_missing_accept_field_accepts_everything() -> None:
