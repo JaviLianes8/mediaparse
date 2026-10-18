@@ -16,7 +16,7 @@ Progress:
 - [x] Five QA lenses report PASS (item 19)
 - [x] Independent reviewer reports PASS (item 16)
 - [x] Gates (item 15), final run
-- [ ] PR and trace guard CLEAN (item 17); merge and publish left to the maintainer
+- [x] PR #3 and trace guard CLEAN (item 17); merge and publish left to the maintainer
 
 ## Scorecard
 
@@ -38,7 +38,7 @@ Progress:
 | 14 | sdist and wheel contents | PASS |
 | 15 | Gates each exit 0 | PASS: see Gates |
 | 16 | Independent reviewer | PASS (two rounds) |
-| 17 | PR and trace guard | see the PR; merge and publish left to the maintainer |
+| 17 | PR and trace guard | PR #3 from `release/1.0.0`, trace guard CLEAN; merge and publish left to the maintainer |
 | 18 | Contracts bite (mutations) | PASS: author 50, lens a 67, b 47, c 78, e 146, reviewer 32 (9 of them author mutants re-run); every non-equivalent survivor killed by a contract |
 | 19 | Five independent QA lenses | PASS: a round 4, b round 2, c round 4, d round 2, e round 2 |
 
