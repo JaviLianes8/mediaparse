@@ -1,5 +1,7 @@
 # mediaparse
 
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
 Parse and build HTTP media types, `Content-Type` and `Accept` headers, exactly.
 
 ## Install
