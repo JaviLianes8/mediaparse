@@ -162,3 +162,20 @@ def test_media_type_promise() -> None:
     assert media == MediaType("a", "b+json", (("x", "1"), ("y", "")))
     assert media != MediaType("a", "b+json", (("y", ""), ("x", "1")))
     assert dataclasses.replace(media, type="C").type == "c"
+
+
+def test_public_classes_live_at_the_package_top() -> None:
+    for cls in (AcceptItem, MediaType, MediaTypeError):
+        assert cls.__module__ == "mediaparse"
+        assert f"mediaparse.{cls.__name__}" in repr(cls)
+    assert b"_mediatype" not in pickle.dumps(MediaType("a", "b"))
+    assert b"_errors" not in pickle.dumps(MediaTypeError("x", position=1))
+
+
+def test_doctests_of_the_public_classes_are_found_at_the_package_top() -> None:
+    import doctest
+
+    found = [test for test in doctest.DocTestFinder().find(mediaparse) if test.examples]
+    names = {test.name.removeprefix("mediaparse.") for test in found}
+    assert {"MediaType.get", "MediaType.essence", "AcceptItem.matches"} <= names
+    assert {"MediaTypeError", "AcceptItem.specificity", "MediaType.suffix"} <= names

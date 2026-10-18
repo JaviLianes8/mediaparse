@@ -12,6 +12,16 @@ from ._rfc2231 import decode_extended
 
 __version__ = "1.0.0"
 
+# The public classes show and pickle as mediaparse.<Name>, so a pickle never depends on
+# the private module that defines them.
+for _cls in (AcceptItem, MediaType, MediaTypeError):
+    _cls.__module__ = __name__
+    for _member in vars(_cls).values():
+        _function = getattr(_member, "fget", _member)
+        if str(getattr(_function, "__module__", "")).startswith("mediaparse._"):
+            _function.__module__ = __name__
+del _cls, _member, _function
+
 __all__ = [
     "AcceptItem",
     "MediaType",

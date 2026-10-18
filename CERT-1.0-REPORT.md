@@ -109,58 +109,7 @@ under 300 characters), an int past the digit limit as a weight, lone surrogates.
 another machine, the full suite (fetched sources, werkzeug, multipart and the 0.2.0
 oracle present) run with `-x` and a 300 s per-test limit. All 50 killed at once.
 
-| Mutant | Module | Change | Killed by |
-| --- | --- | --- | --- |
-| M01 | `_tokens.py` | tchar drops the backtick | `test_fuzz.py::test_strict_accepts_exactly_the_grammar[11]` |
-| M02 | `_tokens.py` | HTTP whitespace loses CR | `test_parse.py::test_http_whitespace_around_the_value_is_trimmed` |
-| M03 | `_tokens.py` | obs-text upper bound off by one | `test_spec_rfc9110.py::test_quoted_strings_are_exactly_qdtext_and_quoted_pair` |
-| M04 | `_tokens.py` | quote escapes only the quote | `test_build.py::test_build_escapes_only_quotes_and_backslashes` |
-| M05 | `_tokens.py` | ascii_lower uses str.lower | `test_build.py::test_build_rejects_an_invalid_param_name[\u212a]` |
-| M06 | `_tokens.py` | empty string counts as a token | `test_build.py::test_build_quotes_an_empty_value` |
-| M07 | `_lenient.py` | first duplicate no longer wins | `_parse.py::mediaparse._parse.parse_media_type` |
-| M08 | `_lenient.py` | subtype trailing whitespace kept | `test_fuzz.py::test_parsing_never_crashes_and_is_stable[11]` |
-| M09 | `_lenient.py` | empty unquoted value kept | `test_parse.py::test_a_skipped_duplicate_does_not_hide_a_later_valid_one` |
-| M10 | `_lenient.py` | text after closing quote not skipped | `test_parse.py::test_nothing_between_a_closing_quote_and_the_next_semicolon_is_read` |
-| M11 | `_lenient.py` | lone trailing backslash dropped | `test_parse.py::test_trailing_backslash_in_an_open_quote_is_kept` |
-| M12 | `_lenient.py` | leading whitespace not trimmed | `_accept.py::mediaparse._accept.parse_accept` |
-| M13 | `_lenient.py` | error position off by one | `test_fuzz.py::test_parsing_never_crashes_and_is_stable[11]` |
-| M14 | `_strict.py` | duplicate allowed in strict | `test_contract_api.py::test_media_type_error_is_a_value_error_with_a_position_that_pickles` |
-| M15 | `_strict.py` | qdtext accepts DEL | `test_strict.py::test_invalid_headers_raise_at_the_first_bad_character[text/plain;a="\x7f"-14]` |
-| M16 | `_strict.py` | quoted-pair refuses tab | `test_spec_rfc9110.py::test_quoted_strings_are_exactly_qdtext_and_quoted_pair` |
-| M17 | `_strict.py` | OWS before = accepted | `_errors.py::mediaparse._errors.MediaTypeError` |
-| M18 | `_strict.py` | empty parameter after ; refused | `test_fuzz.py::test_strict_accepts_exactly_the_grammar[11]` |
-| M19 | `_strict.py` | quoted names not recorded | `test_accept.py::test_strict_mode_rejects_a_quoted_weight_and_whitespace_around_equals` |
-| M20 | `_mediatype.py` | suffix from first plus | `test_mediatype.py::test_suffix_is_the_part_after_the_last_plus[application/a+b+cbor-cbor]` |
-| M21 | `_mediatype.py` | get is case sensitive | `_mediatype.py::mediaparse._mediatype.MediaType.get` |
-| M22 | `_mediatype.py` | duplicate names allowed | `test_mediatype.py::test_invalid_parts_raise[text-plain-params8]` |
-| M23 | `_mediatype.py` | str uses '; ' | `_mediatype.py::mediaparse._mediatype.MediaType` |
-| M24 | `_mediatype.py` | value check skipped | `test_hostile.py::test_messages_stay_short_for_huge_input[<lambda>12]` |
-| M25 | `_build.py` | control characters written | `test_build.py::test_build_never_writes_a_control_character` |
-| M26 | `_build.py` | duplicate names written | `test_build.py::test_build_rejects_two_names_equal_after_lower_casing` |
-| M27 | `_build.py` | name not lower-cased | `test_build.py::test_build_lower_cases_type_and_param_names` |
-| M28 | `_extended.py` | space kept unencoded | `test_build.py::test_extended_matches_the_rfc_8187_example` |
-| M29 | `_extended.py` | lower-case hex digits refused | `test_spec_mime.py::test_rfc_8187_examples` |
-| M30 | `_extended.py` | non-ASCII passes through | `test_rfc2231.py::test_malformed_extended_parameters_raise[params17]` |
-| M31 | `_rfc2231.py` | leading zero sections allowed | `test_rfc2231.py::test_malformed_extended_parameters_raise[params2]` |
-| M32 | `_rfc2231.py` | gaps allowed | `test_rfc2231.py::test_malformed_extended_parameters_raise[params0]` |
-| M33 | `_rfc2231.py` | plain wins over extended | `test_rfc2231.py::test_the_extended_form_wins_over_the_plain_one_and_keeps_its_place` |
-| M34 | `_rfc2231.py` | escape codecs allowed | `test_review_regressions.py::test_decode_extended_only_raises_media_type_error[params5]` |
-| M35 | `_rfc2231.py` | empty charset not us-ascii | `test_rfc2231.py::test_malformed_extended_parameters_raise[params19]` |
-| M36 | `_accept.py` | qvalue allows four decimals | `test_accept.py::test_invalid_weights_skip_the_element_or_raise_in_strict_mode[0.0001]` |
-| M37 | `_accept.py` | malformed q read as 1 | `test_review_regressions.py::test_a_malformed_weight_never_becomes_weight_one[text/html;` |
-| M38 | `_accept.py` | commas inside quotes split | `test_accept.py::test_commas_inside_quoted_strings_do_not_split` |
-| M39 | `_accept.py` | q kept in the range | `_accept.py::mediaparse._accept.parse_accept` |
-| M40 | `_accept.py` | strict position not shifted | `test_accept.py::test_strict_errors_point_into_the_whole_header` |
-| M41 | `_acceptitem.py` | specificity ignores params | `_acceptitem.py::mediaparse._acceptitem.AcceptItem.specificity` |
-| M42 | `_acceptitem.py` | charset compared with case | `test_accept.py::test_charset_matches_case_insensitively_other_values_exactly` |
-| M43 | `_acceptitem.py` | q range check upper bound | `test_contract_api.py::test_invalid_values_raise_media_type_error[<lambda>14]` |
-| M44 | `_negotiate.py` | tie goes to the last offer | `test_accept.py::test_rfc_text_example` |
-| M45 | `_negotiate.py` | latest range wins a tie | `test_accept.py::test_the_earliest_range_wins_between_equally_specific_ones` |
-| M46 | `_negotiate.py` | missing Accept accepts nothing | `test_accept.py::test_the_earliest_range_wins_between_equally_specific_ones` |
-| M47 | `_negotiate.py` | wildcard offers allowed | `test_accept.py::test_offers_must_be_concrete[text/*]` |
-| M48 | `_normalize.py` | charset value case kept | `_normalize.py::mediaparse._normalize.matches` |
-| M49 | `_errors.py` | messages not cut | `test_hostile.py::test_parsing_time_grows_linearly[accept list]` |
-| M50 | `_parse.py` | strict flag ignored | `_errors.py::mediaparse._errors.MediaTypeError` |
+The table is in [CERT-1.0-MUTANTS.md](https://github.com/JaviLianes8/mediaparse/blob/main/CERT-1.0-MUTANTS.md).
 
 ## Packaging, e2e and Pythons (items 8, 10, 13, 14)
 
@@ -191,7 +140,7 @@ sweep at most 40 new mutants on the code changed since the previous round.
 | a | 4 | 9c67400 | PASS | 3 survivors killed, 7 new mutants all killed, GUIDE lines confirmed |
 | b. Correctness and ground truth | 1 | 9c67400 | FAIL (minor) | 13 sources re-fetched (sha256 match); own WHATWG and RFC 9110 references written from the spec text: 400,000 parse inputs, 150,000 Accept headers, 106,610 quality pairs, 43,000 inputs against the Node.js reference, WPT 955/955, 0 mismatches; RFC examples, IANA names and properties pass; rules 10 and 13 hold. Findings: `build(extended=True)` wrote two fields for names equal without case when one value was encoded; a `*` inside a name could be read back as a section; 40 mutants, 1 survivor (us-ascii default of a plain first section), 1 equivalent; an imprecise test comment; fixed in 44efdc4 to d569d74 |
 | b | 2 | d569d74 | PASS | fixes confirmed, property run 0 mismatches, 7 mutants on the changed code all killed |
-| c. Adversarial and robustness | 1 | d569d74 | FAIL | 13.9 million fuzz cases on four seeds, 64 shapes at n/4n/16n, 10 MB and 100k inputs, recursion limit pass, free-threaded 3.14.2t with 4 threads (0 mismatches), 40 mutants all killed. Findings: a bare `ValueError` from default-mode Accept for `a/b;x=a"b;q="` (a quote inside an unquoted value hid the weight); unbounded codec-cache growth from new charset names in `decode_extended`; quadratic `AcceptItem.matches`; an unprintable argument escaping as another exception; `q` subclass and `-0.0`, value subclasses stored as given; fixed in 34c2412 |
+| c. Adversarial and robustness | 1 | d569d74 | FAIL | 13.9 million fuzz cases on four seeds, 64 shapes at n/4n/16n, 10 MB and 100k inputs, recursion limit pass, free-threaded 3.14.2t with 4 threads (0 mismatches), 40 mutants all killed. Findings: a bare `ValueError` from default-mode Accept for `a/b;x=a"b;q="` (a quote inside an unquoted value hid the weight; introduced earlier in this round, never in 0.2.0); unbounded codec-cache growth from new charset names in `decode_extended`; quadratic `AcceptItem.matches`; an unprintable argument escaping as another exception; `q` subclass and `-0.0`, value subclasses stored as given; fixed in 34c2412 |
 | c | 2 | 34c2412 | FAIL (minor) | all five confirmed (2.89 million new fuzz cases, 300,000 elements against an independent walk of the browser algorithm, codec cache growth 0, matching linear to 100k parameters, 20,792 charset names unchanged); 32 mutants, 1 survivor (a quoted value after a bare name), 7 equivalent; a weak charset test; fixed in 99a83ec |
 | c | 3 | 99a83ec | FAIL (minor) | both survivors killed; 6 mutants on the changed line, 1 survivor (the name check bypassed for short names); short-name contract added in 0440066 |
 | c | 4 | 0440066 | PASS | the last survivor killed by the full suite; no open survivors besides the argued equivalents |

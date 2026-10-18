@@ -102,7 +102,7 @@ def test_wheel_and_sdist_contents(dist: Path) -> None:
     assert not any(name.startswith("tests/") for name in names)
     assert not any(name.endswith((".json", ".js", ".md")) for name in names)
     listing = _run(sys.executable, "-m", "tarfile", "-l", sdist).stdout.decode()
-    for absent in ("IMPROVEMENTS-round", "CERT-1.0-REPORT", ".txt", ".xml", ".html", "wpt-"):
+    for absent in ("IMPROVEMENTS-round", "CERT-1.0-", ".txt", ".xml", ".html", "wpt-"):
         assert absent not in listing.replace("requirements-dev.txt", ""), absent
     assert "node_modules" not in listing
     for present in ("tests/upstream/MANIFEST.json", "tests/test_wpt.py", "GUIDE.md", "LICENSE"):

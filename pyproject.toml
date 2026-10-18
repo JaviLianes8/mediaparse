@@ -42,7 +42,7 @@ Funding = "https://buymeacoffee.com/jlianesglrs"
 
 [tool.hatch.build.targets.sdist]
 # Third-party test files are fetched locally and never shipped; only their manifest is.
-exclude = ["IMPROVEMENTS-round*.md", "CERT-1.0-REPORT.md", "tests/upstream/*", "!tests/upstream/MANIFEST.json"]
+exclude = ["IMPROVEMENTS-round*.md", "CERT-1.0-*.md", "tests/upstream/*", "!tests/upstream/MANIFEST.json"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mediaparse"]

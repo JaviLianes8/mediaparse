@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-17
+## [1.0.0] - 2026-10-18
 
 The public API is now stable: the twelve names in `mediaparse.__all__`, their
 signatures, defaults and error types follow Semantic Versioning from this release on.
@@ -47,6 +47,8 @@ signatures, defaults and error types follow Semantic Versioning from this releas
   way; the default parser points at the offending character instead of the start of the
   type or subtype; `decode_extended` counts from the start of the parameter value.
 - `MediaType.get` has overloads, so `get(name, "default")` is typed `str`.
+- `MediaType`, `AcceptItem` and `MediaTypeError` show and pickle as `mediaparse.<Name>`
+  instead of the private module that defines them; pickles made by 0.2.0 still load.
 
 ### Fixed
 

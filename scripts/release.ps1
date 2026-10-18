@@ -2,6 +2,9 @@
 # The version must not already be on PyPI; the token is read from a secret store, never git.
 $ErrorActionPreference = "Stop"
 
+# Build only from a clean tree: hatchling ships every untracked, non-ignored file.
+if (git status --porcelain) { throw "The working tree is not clean. Commit or remove the changes first." }
+
 # Refuse to upload a version PyPI already has. Works on Windows PowerShell 5.1 and pwsh 7.
 $version = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
 $taken = $true

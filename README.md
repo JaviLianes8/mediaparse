@@ -134,7 +134,7 @@ in each release.
 Python 3.13 removed `cgi.parse_header` along with the rest of the `cgi` module. The
 `email.message.Message` machinery that replaces it is built for mail: it reads a quoted
 value ending in an escaped backslash (`x="a\\"`) past its closing quote, and its
-`set_param` writes a CR LF from a value straight into the header.
+`set_param` on its default policy stores a CR LF from a value in the header.
 `multipart.parse_options_header` drops parameters whose names hold characters other than
 letters, digits, `-` and `_`, and `werkzeug` is a whole WSGI application library.
 `mediaparse` is a small, typed, zero-dependency library that parses the way browsers do,
