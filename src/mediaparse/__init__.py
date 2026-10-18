@@ -16,11 +16,11 @@ __version__ = "1.0.0"
 # the private module that defines them.
 for _cls in (AcceptItem, MediaType, MediaTypeError):
     _cls.__module__ = __name__
+    # Methods follow, so doctest finds their examples here (it takes properties anyway).
     for _member in vars(_cls).values():
-        _function = getattr(_member, "fget", _member)
-        if str(getattr(_function, "__module__", "")).startswith("mediaparse._"):
-            _function.__module__ = __name__
-del _cls, _member, _function
+        if callable(_member) and str(getattr(_member, "__module__", "")).startswith("mediaparse._"):
+            _member.__module__ = __name__
+del _cls, _member
 
 __all__ = [
     "AcceptItem",
