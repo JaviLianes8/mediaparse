@@ -56,7 +56,10 @@ class MediaType:
             raise MediaTypeError("a parameter is given more than once")
         object.__setattr__(self, "type", ascii_lower(self.type))
         object.__setattr__(self, "subtype", ascii_lower(self.subtype))
-        lowered = tuple((name, value) for name, (_, value) in zip(names, pairs, strict=True))
+        # Values are stored as plain str, so a subclass cannot change equality or hashing.
+        lowered = tuple(
+            (name, str.__str__(value)) for name, (_, value) in zip(names, pairs, strict=True)
+        )
         object.__setattr__(self, "params", lowered)
 
     @property

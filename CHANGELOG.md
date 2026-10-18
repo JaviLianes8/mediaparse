@@ -33,7 +33,9 @@ signatures, defaults and error types follow Semantic Versioning from this releas
 - `AcceptItem` refuses a `*/subtype` range and a `q` parameter inside the range with
   `MediaTypeError`; both were accepted when built by hand, though no parser produced them.
 - `decode_extended` refuses the `charmap` codec as a charset, like the other Python
-  codecs that are not character sets.
+  codecs that are not character sets, and accepts only charset names of Python's standard
+  `encodings` package (at most 40 characters); a codec registered by another package is
+  no longer looked up.
 - `parse_accept` in its default mode skips an element with any `q` not written as
   `q=qvalue`: a quoted `q="0.5"` (which the grammar does not allow; 0.2.0 read it as a
   weight) and a malformed `q` after a valid one (`q=0.5;q =1`; 0.2.0 kept 0.5). The
@@ -46,6 +48,17 @@ signatures, defaults and error types follow Semantic Versioning from this releas
 
 ### Fixed
 
+- `parse_accept`, `quality` and `negotiate` raised a bare `ValueError` in the default
+  mode for an element such as `a/b;x=a"b;q="`, where a quote inside an unquoted value
+  hid the weight from the check; such an element is now skipped.
+- `decode_extended` grew memory without limit when fed new charset names, because
+  Python's codec registry remembers every name it fails to find; only names of Python's
+  standard encodings, at most 40 characters, are now looked up.
+- `AcceptItem.matches`, and so `quality`, took time proportional to the product of the
+  range and offer parameter counts; it is now linear.
+- An argument whose `repr` fails or recurses too deep no longer turns a `TypeError` into
+  another exception; `AcceptItem` stores `q` as a plain float (never `-0.0`) and checks
+  the converted value; `MediaType` stores parameter values as plain `str`.
 - `build(..., extended=True)` wrote two fields for names equal without case when one
   value needed encoding (`{"T": "\x7f", "t": "x"}`), losing one on decode; it now raises
   as it does without `extended`. It also refuses a `*` anywhere in a name (only a final

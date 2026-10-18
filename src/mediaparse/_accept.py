@@ -62,7 +62,8 @@ def _lenient_item(element: str) -> AcceptItem:
     # reading it as the default weight 1, or letting another q win, would turn a weight
     # the sender wrote into a different one. Every q must be well formed.
     weight = media.get("q")
-    if not all(_raw_weights(element)) or (weight and _QVALUE.fullmatch(weight) is None):
+    malformed = weight is not None and _QVALUE.fullmatch(weight) is None
+    if malformed or not all(_raw_weights(element)):
         raise MediaTypeError("invalid weight")
     return _with_weight(media, weight)
 
@@ -100,12 +101,20 @@ def _raw_weights(element: str) -> list[bool]:
             index += 1
         name = element[start:index].lstrip(HTTP_WHITESPACE)
         value_start = index + 1
-        while index < length and element[index] != ";":
-            if element[index] == '"':
-                _, index = collect_quoted(element, index)
-            else:
-                index += 1
+        # As in the browser algorithm, a value is a quoted string only if it starts with one.
+        if (
+            index < length
+            and element[index] == "="
+            and element[value_start : value_start + 1] == '"'
+        ):
+            _, index = collect_quoted(element, value_start)
+        index = _next(element, ";", index)
         if ascii_lower(name.rstrip(HTTP_WHITESPACE)) == "q":
             value = element[value_start:index].rstrip(HTTP_WHITESPACE)
             found.append(name in ("q", "Q") and _QVALUE.fullmatch(value) is not None)
     return found
+
+
+def _next(text: str, char: str, start: int) -> int:
+    index = text.find(char, start)
+    return len(text) if index < 0 else index

@@ -29,7 +29,7 @@ def show(value: object, limit: int = 80) -> str:
     """Return ``repr(value)`` cut to ``limit`` characters, so a huge input stays out of messages."""
     try:
         text = repr(value)
-    except ValueError:
-        # An int past the digit limit cannot be printed at all.
+    except Exception:
+        # An int past the digit limit, a structure too deep or a broken __repr__.
         return f"<{type(value).__name__}>"
     return text if len(text) <= limit else text[: limit - 3] + "..."

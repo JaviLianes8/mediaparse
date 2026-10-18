@@ -123,8 +123,9 @@ the range, and a weight outside 0 to 1 or NaN.
 no leading zeros), decodes `charset'language'percent-encoded` values and drops the
 language. Encoded and plain sections may mix and a character may span sections. When
 both `name` and an extended form are present the extended form wins. The charset must
-be one Python decodes as text; codecs that are not character sets (escape decoders,
-`mbcs`, `oem`, `charmap`, `idna`, `punycode`) are refused.
+be one of Python's standard encodings (a name of at most 40 characters) that decodes
+text; codecs that are not character sets (escape decoders, `mbcs`, `oem`, `charmap`,
+`idna`, `punycode`) are refused.
 
 ## Errors
 
@@ -172,7 +173,8 @@ All results are the same, checked on over 50,000 calls against the PyPI release,
 - In the default mode `parse_accept` skips an element with any `q` not written as
   `q=qvalue`: a quoted `q="0.5"` (0.2.0 read it as a weight) or a malformed `q` after a
   valid one (`q=0.5;q =1`, where 0.2.0 kept 0.5), as the strict mode refuses both.
-- `decode_extended` refuses the `charmap` codec.
+- `decode_extended` refuses the `charmap` codec and charset names outside Python's
+  standard encodings.
 - Error positions: strict `parse_accept` errors on the weight or a `*/subtype` range
   now carry a position, the default parser points at the offending character rather
   than the start of the part, and `decode_extended` counts from the start of the value.

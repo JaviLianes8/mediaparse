@@ -38,9 +38,13 @@ class AcceptItem:
             raise MediaTypeError("the weight goes in q, not in the media range parameters")
         if isinstance(self.q, bool) or not isinstance(self.q, (int, float)):
             raise TypeError(f"q must be a number, got {type(self.q).__name__}")
-        if not 0 <= self.q <= 1:
+        try:
+            q = float(self.q) + 0.0  # a plain float, and -0.0 becomes 0.0
+        except OverflowError:
+            q = float("inf")
+        if not 0 <= q <= 1:
             raise MediaTypeError(f"q must be between 0 and 1, got {show(self.q)}")
-        object.__setattr__(self, "q", float(self.q))
+        object.__setattr__(self, "q", q)
 
     def specificity(self) -> tuple[bool, bool, int]:
         """Precedence of the range: concrete type, concrete subtype, parameter count.
@@ -73,7 +77,8 @@ class AcceptItem:
         rng = self.media_range
         if rng.type not in ("*", media.type) or rng.subtype not in ("*", media.subtype):
             return False
-        return all(_same(name, value, media.get(name)) for name, value in rng.params)
+        given = dict(media.params)
+        return all(_same(name, value, given.get(name)) for name, value in rng.params)
 
 
 def _same(name: str, wanted: str, actual: str | None) -> bool:

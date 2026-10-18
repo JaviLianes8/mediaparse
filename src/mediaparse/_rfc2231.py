@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import codecs
+import encodings
+import encodings.aliases
+import pkgutil
 import re
 from collections.abc import Mapping
 
@@ -94,6 +97,9 @@ def _join(attr: str, slot: dict[int, tuple[bool, str]]) -> str:
 def _decode(data: bytes, charset: str, label: str) -> str:
     if _CHARSET.fullmatch(charset) is None:
         raise MediaTypeError(f"invalid charset name {show(charset)}")
+    if not _standard(charset):
+        # codecs.lookup remembers every name it fails to find; never feed it unknown ones.
+        raise MediaTypeError(f"unknown charset {show(charset)}")
     try:
         name = codecs.lookup(charset).name
     except LookupError as error:
@@ -106,3 +112,16 @@ def _decode(data: bytes, charset: str, label: str) -> str:
         raise MediaTypeError(f"{show(charset)} is not a text encoding") from error
     except (UnicodeError, ValueError) as error:
         raise MediaTypeError(f"parameter {label} is not valid {show(charset)}") from error
+
+
+def _standard(charset: str) -> bool:
+    """Whether Python's standard ``encodings`` package knows the name (at most 40 chars,
+    the longest a registered charset name may be)."""
+    if len(charset) > 40:
+        return False
+    key = encodings.normalize_encoding(charset.lower())
+    return key in _ENCODINGS or key in _ALIASES or key.replace(".", "_") in _ALIASES
+
+
+_ENCODINGS = frozenset(module.name for module in pkgutil.iter_modules(encodings.__path__))
+_ALIASES = frozenset(encodings.aliases.aliases)
