@@ -63,6 +63,8 @@ def test_unknown_charset_names_leave_no_trace_and_stay_fast() -> None:
     for index in range(2000):
         with pytest.raises(MediaTypeError):
             decode_extended({"a*": f"x{index}{'y' * 1000}''x"})
+        with pytest.raises(MediaTypeError):
+            decode_extended({"a*": f"x{index}y''x"})
     assert time.perf_counter() - start < 5
     assert len(getattr(encodings, "_cache", {})) - before < 10
 
